@@ -1,0 +1,7 @@
+# 環境変数・APIキー
+.env
+
+# Pythonのキャッシュや仮想環境など
+__pycache__/
+*.pyc
+.DS_Store
