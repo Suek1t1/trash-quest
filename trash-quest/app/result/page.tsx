@@ -1,8 +1,8 @@
 const STAR_STATS = [
-  { rank: 1, count: 3 },
-  { rank: 2, count: 3 },
-  { rank: 3, count: 3 },
   { rank: 4, count: 3 },
+  { rank: 3, count: 3 },
+  { rank: 2, count: 3 },
+  { rank: 1, count: 3 },
 ];
 
 export default function ResultPage() {
@@ -12,6 +12,10 @@ export default function ResultPage() {
 
       <div style={styles.content}>
         <div style={styles.leftPanel}>
+          <div style={styles.speechBubble}>
+            <p style={styles.speechText}>よくやったね。</p>
+            <div style={styles.speechTail} />
+          </div>
           <img
             src="/img/waiting_cleaner.png"
             alt="お掃除係"
@@ -75,20 +79,49 @@ const styles = {
   },
   leftPanel: {
     flex: 1,
+    position: "relative" as const,
     display: "flex",
     justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.03)",
-    border: "2px solid rgba(255,215,0,0.4)",
-    borderRadius: "16px",
-    boxShadow: "0 0 24px rgba(255,215,0,0.15) inset",
+    alignItems: "flex-end",
+    paddingBottom: "3%",
     overflow: "hidden",
   },
   cleanerImage: {
-    height: "85%",
+    height: "60%",
     width: "auto",
     objectFit: "contain" as const,
     filter: "drop-shadow(0 8px 12px rgba(0,0,0,0.6))",
+  },
+  speechBubble: {
+    position: "absolute" as const,
+    top: "20%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    backgroundColor: "#ffffff",
+    color: "#2a2a2a",
+    borderRadius: "20px",
+    padding: "14px 22px",
+    maxWidth: "75%",
+    boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+    zIndex: 2,
+  },
+  speechText: {
+    margin: 0,
+    fontSize: "1.2rem",
+    fontWeight: 700,
+    textAlign: "center" as const,
+    whiteSpace: "nowrap" as const,
+  },
+  speechTail: {
+    position: "absolute" as const,
+    bottom: "-10px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: 0,
+    height: 0,
+    borderLeft: "10px solid transparent",
+    borderRight: "10px solid transparent",
+    borderTop: "12px solid #ffffff",
   },
   rightColumn: {
     flex: 1,
