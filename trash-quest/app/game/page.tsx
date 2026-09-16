@@ -12,7 +12,18 @@ type Detection = {
   box_2d: [number, number, number, number];
 };
 
-type Phase = "sparkle" | "running" | "after";
+type Phase = "sparkle" | "running1" | "between" | "running2" | "after";
+
+// フェーズごとの背景画像とゲージ画像
+const SCREEN_BY_PHASE: Record<
+  Exclude<Phase, "after">,
+  { image: string; gauge: string; showSparkles: boolean }
+> = {
+  sparkle: { image: "/img/image.png", gauge: "/img/gauge_enp.png", showSparkles: true },
+  running1: { image: "/img/image.png", gauge: "/img/gauge_enp.png", showSparkles: true },
+  between: { image: "/img/Between.jpg", gauge: "/img/gauge_half.png", showSparkles: false },
+  running2: { image: "/img/Between.jpg", gauge: "/img/gauge_half.png", showSparkles: false },
+};
 
 export default function GamePage() {
   const router = useRouter();
@@ -29,27 +40,34 @@ export default function GamePage() {
     );
   }
 
+  const { image, gauge, showSparkles } = SCREEN_BY_PHASE[phase];
+  const isRunning = phase === "running1" || phase === "running2";
+
   return (
     <main
       style={styles.container}
       onClick={() => {
-        if (phase === "sparkle") setPhase("running");
+        if (phase === "sparkle") setPhase("running1");
+        if (phase === "between") setPhase("running2");
       }}
     >
       <div style={styles.frame}>
-        <img src="/img/image.png" alt="ゲーム画面" style={styles.image} />
-        <img src="/img/gauge_enp.png" alt="ゲージ" style={styles.gauge} />
+        <img src={image} alt="ゲーム画面" style={styles.image} />
+        <img src={gauge} alt="ゲージ" style={styles.gauge} />
 
-        {phase === "running" && (
+        {isRunning && (
           <img
             src="/img/cleaner.png"
             alt="お掃除係"
             style={styles.cleaner}
-            onAnimationEnd={() => setPhase("after")}
+            onAnimationEnd={() =>
+              setPhase(phase === "running1" ? "between" : "after")
+            }
           />
         )}
 
-        {(detections as Detection[]).map((detection, index) => {
+        {showSparkles &&
+          (detections as Detection[]).map((detection, index) => {
           const [ymin, xmin, ymax, xmax] = detection.box_2d;
           const left = (xmin / BOX_SCALE) * 100;
           const top = (ymin / BOX_SCALE) * 100;
