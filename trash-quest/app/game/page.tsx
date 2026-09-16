@@ -11,7 +11,7 @@ type Detection = {
   box_2d: [number, number, number, number];
 };
 
-type Phase = "sparkle" | "after";
+type Phase = "sparkle" | "running" | "after";
 
 export default function GamePage() {
   const [phase, setPhase] = useState<Phase>("sparkle");
@@ -27,9 +27,23 @@ export default function GamePage() {
   }
 
   return (
-    <main style={styles.container} onClick={() => setPhase("after")}>
+    <main
+      style={styles.container}
+      onClick={() => {
+        if (phase === "sparkle") setPhase("running");
+      }}
+    >
       <div style={styles.frame}>
         <img src="/img/image.png" alt="ゲーム画面" style={styles.image} />
+
+        {phase === "running" && (
+          <img
+            src="/img/cleaner.png"
+            alt="お掃除係"
+            style={styles.cleaner}
+            onAnimationEnd={() => setPhase("after")}
+          />
+        )}
 
         {(detections as Detection[]).map((detection, index) => {
           const [ymin, xmin, ymax, xmax] = detection.box_2d;
@@ -124,6 +138,15 @@ const styles = {
     color: "#fff59d",
     textShadow: "0 0 6px rgba(255,255,255,0.9)",
     animation: "sparkle-twinkle 1.2s ease-in-out infinite",
+    pointerEvents: "none" as const,
+  },
+  cleaner: {
+    position: "absolute" as const,
+    top: "50%",
+    height: "35%",
+    width: "auto",
+    transform: "translateY(-50%)",
+    animation: "cleaner-run 2.0s linear forwards",
     pointerEvents: "none" as const,
   },
 };
