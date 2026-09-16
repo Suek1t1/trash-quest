@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import detections from "../detections.json";
 
@@ -14,11 +15,12 @@ type Detection = {
 type Phase = "sparkle" | "running" | "after";
 
 export default function GamePage() {
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("sparkle");
 
   if (phase === "after") {
     return (
-      <main style={styles.container}>
+      <main style={styles.container} onClick={() => router.push("/result")}>
         <div style={styles.frame}>
           <img src="/img/after.jpg" alt="お片付け後の部屋" style={styles.image} />
           <img src="/img/gauge_full.png" alt="ゲージ(満タン)" style={styles.gauge} />
