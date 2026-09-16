@@ -1,38 +1,100 @@
 [
   {
-      476,
-      17,
-      853,
-      311
+    "name": "crumpled paper",
+    "box_2d": [
+      899,
+      737,
+      974,
+      796
     ],
-    "level": "lv2"
+    "level": "lv1"
   },
   {
-    "name": "clothing",
+    "name": "crumpled paper",
     "box_2d": [
-      467,
+      801,
+      831,
+      888,
+      902
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled paper",
+    "box_2d": [
+      811,
+      745,
+      903,
+      802
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled paper",
+    "box_2d": [
+      781,
+      728,
+      834,
+      755
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled paper",
+    "box_2d": [
+      862,
+      473,
+      919,
+      542
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled paper",
+    "box_2d": [
+      473,
+      149,
+      517,
+      187
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled paper",
+    "box_2d": [
+      345,
+      171,
+      417,
+      218
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "clothes",
+    "box_2d": [
+      454,
       0,
-      680,
-      143
+      681,
+      149
     ],
     "level": "lv2"
   },
   {
-    "name": "clothing",
+    "name": "clothes",
     "box_2d": [
-      570,
-      222,
-      684,
-      276
+      504,
+      20,
+      856,
+      237
     ],
     "level": "lv2"
   },
   {
-    "name": "bag",
+    "name": "backpack",
     "box_2d": [
-      127,
+      129,
       255,
-      307,
+      298,
       408
     ],
     "level": "lv2"
@@ -40,10 +102,10 @@
   {
     "name": "book",
     "box_2d": [
-      276,
-      372,
-      338,
-      458
+      427,
+      248,
+      519,
+      393
     ],
     "level": "lv2"
   },
@@ -51,8 +113,8 @@
     "name": "notebook",
     "box_2d": [
       333,
-      342,
-      420,
+      344,
+      421,
       427
     ],
     "level": "lv2"
@@ -60,19 +122,19 @@
   {
     "name": "book",
     "box_2d": [
-      426,
-      245,
-      522,
-      393
+      280,
+      375,
+      336,
+      456
     ],
     "level": "lv2"
   },
   {
-    "name": "folder",
+    "name": "notebook",
     "box_2d": [
-      358,
+      359,
       548,
-      487,
+      488,
       696
     ],
     "level": "lv2"
@@ -80,9 +142,9 @@
   {
     "name": "book",
     "box_2d": [
-      461,
-      608,
-      543,
+      462,
+      609,
+      545,
       703
     ],
     "level": "lv2"
@@ -90,69 +152,69 @@
   {
     "name": "open book",
     "box_2d": [
-      372,
-      675,
-      485,
-      866
+      373,
+      673,
+      487,
+      871
     ],
     "level": "lv2"
   },
   {
     "name": "book",
     "box_2d": [
-      635,
-      677,
-      764,
-      768
-    ],
-    "level": "lv2"
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      619,
-      458,
-      747,
-      597
+      636,
+      676,
+      765,
+      767
     ],
     "level": "lv2"
   },
   {
     "name": "open book",
     "box_2d": [
-      730,
-      423,
+      733,
+      424,
       882,
-      580
+      574
     ],
     "level": "lv2"
   },
   {
-    "name": "book",
+    "name": "notebook",
     "box_2d": [
-      906,
-      407,
+      716,
+      555,
+      966,
+      744
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "books",
+    "box_2d": [
+      908,
+      408,
       1000,
-      563
+      560
     ],
     "level": "lv2"
   },
   {
     "name": "papers",
     "box_2d": [
-      718,
-      555,
-      963,
-      742
+      620,
+      458,
+      746,
+      584
     ],
     "level": "lv4"
   },
   {
     "name": "card",
     "box_2d": [
-      546,
-      528,
-      588,
+      549,
+      529,
+      589,
       572
     ],
     "level": "lv4"
@@ -160,10 +222,10 @@
   {
     "name": "cable",
     "box_2d": [
-      564,
+      571,
       558,
-      638,
-      622
+      634,
+      618
     ],
     "level": "lv3"
   },
@@ -172,8 +234,8 @@
     "box_2d": [
       552,
       608,
-      590,
-      673
+      591,
+      674
     ],
     "level": "lv3"
   },
@@ -181,326 +243,20 @@
     "name": "stapler",
     "box_2d": [
       621,
-      638,
-      672,
-      706
-    ],
-    "level": "lv3"
-  },
-  {
-    "name": "pouch",
-    "box_2d": [
-      339,
-      272,
-      407,
-      330
-    ],
-    "level": "lv3"
-  },
-  {
-    "name": "pens in pouch",
-    "box_2d": [
-      871,
-      551,
-      999,
-      637
-    ],
-    "level": "lv3"
-  },
-  {
-    "name": "crumpled tissue",
-    "box_2d": [
-      499,
-      29,
-      560,
-      97
-    ],
-    "level": "lv1"
-  },
-  {
-    "name": "crumpled paper",
-    "box_2d": [
-      348,
-      170,
-      417,
-      219
-    ],
-    "level": "lv1"
-  },
-  {
-    "name": "crumpled tissue",
-    "box_2d": [
-      471,
-      149,
-      521,
-      187
-    ],
-    "level": "lv1"
-  },
-  {
-    "name": "crumpled paper",
-    "box_2d": [
-      861,
-      471,
-      922,
-      545
-    ],
-    "level": "lv1"
-  },
-  {
-    "name": "crumpled tissue",
-    "box_2d": [
-      901,
-      737,
-      974,
-      796
-    ],
-    "level": "lv1"
-  },
-  {
-    "name": "crumpled tissue",
-    "box_2d": [
-      839,
-      743,
-      903,
-      803
-    ],
-    "level": "lv1"
-  },
-  {
-    "name": "crumpled tissue",
-    "box_2d": [
-      802,
-      831,
-      887,
-      899
-    ],
-    "level": "lv1"
-    ]
-  },
-  {
-    "name": "garbage",
-    "box_2d": [
-      899,
-      735,
-      974,
-      793
-    ]
-  },
-  {
-    "name": "garbage",
-    "box_2d": [
-<<<<<<< HEAD
-      781,
-      727,
-      828,
-      752
-    ]
->>>>>>> Stashed changes
-=======
-      862,
-      473,
-      921,
-      542
-    ]
-  },
-  {
-    "name": "garbage",
-    "box_2d": [
-      498,
-      29,
-      560,
-      97
-    ]
-  },
-  {
-    "name": "garbage",
-    "box_2d": [
-      473,
-      147,
-      521,
-      186
-    ]
-  },
-  {
-    "name": "garbage",
-    "box_2d": [
-      339,
-      172,
-      417,
-      219
-    ]
-  },
-  {
-    "name": "garbage",
-    "box_2d": [
-      480,
-      318,
-      532,
-      355
-    ]
-  },
-  {
-    "name": "scattered clothes",
-    "box_2d": [
-      506,
-      21,
-      868,
-      227
-    ]
-  },
-  {
-    "name": "scattered clothes",
-    "box_2d": [
-      466,
-      0,
-      680,
-      143
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      733,
-      423,
-      881,
-      574
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      908,
-      408,
-      1000,
-      560
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      372,
-      674,
-      488,
-      869
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      638,
-      677,
-      765,
-      767
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      619,
-      458,
-      746,
-      582
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      462,
-      608,
-      545,
+      640,
+      670,
       701
-    ]
+    ],
+    "level": "lv3"
   },
   {
-    "name": "paper",
+    "name": "pen",
     "box_2d": [
-      718,
-      558,
-      966,
-      743
-    ]
-  },
-  {
-    "name": "paper",
-    "box_2d": [
-      357,
-      548,
-      492,
-      696
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      427,
-      252,
-      517,
-      392
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      334,
-      345,
-      419,
-      427
-    ]
-  },
-  {
-    "name": "book",
-    "box_2d": [
-      278,
-      375,
-      336,
-      457
-    ]
-  },
-  {
-    "name": "small item",
-    "box_2d": [
-      552,
-      608,
-      590,
-      675
-    ]
-  },
-  {
-    "name": "small item",
-    "box_2d": [
-      622,
-      638,
-      671,
-      702
-    ]
-  },
-  {
-    "name": "small item",
-    "box_2d": [
-      549,
-      687,
-      605,
-      731
-    ]
-  },
-  {
-    "name": "small item",
-    "box_2d": [
-      871,
-      548,
-      1000,
-      637
-    ]
-  },
-  {
-    "name": "small item",
-    "box_2d": [
-      548,
-      528,
-      589,
-      571
-    ]
->>>>>>> Feat/-Adding-uploading-image-file
+      876,
+      545,
+      996,
+      638
+    ],
+    "level": "lv3"
   }
 ]
