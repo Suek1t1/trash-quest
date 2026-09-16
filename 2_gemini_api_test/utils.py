@@ -51,10 +51,10 @@ def detect_object(image_path: str) -> str:
     For each detected item, also classify how difficult it is to put away, using exactly one of these levels:
     {level_definitions}
 
-    Level assignment rules:
-    - If a storage location suited to the item's category is visible in the image (e.g. a bookshelf for a book, a closet for clothing), classify it as lv2.
-    - If no such storage location is visible, but this category of item is highly likely to have a dedicated storage location in a typical home, still classify it as lv2.
-    - If no storage location is visible and none can be confidently predicted to exist, classify it as lv3.
+    Level assignment rules (apply in this order):
+    - If an item can be disposed of with almost no effort, classify it as lv1; if disposal requires extra effort, continue with the rules below.
+    - If an item requires examining its contents to decide whether it is needed, classify it as lv4, regardless of storage visibility.
+    - Otherwise, if a suitable storage location is visible, or this category is highly likely to have a dedicated storage location in a typical home, classify it as lv2; otherwise classify it as lv3.
 
     Output ONLY a JSON array containing objects with "name" (in English), "box_2d" (normalized 0-1000 scale as [ymin, xmin, ymax, xmax]), and "level" (one of "lv1", "lv2", "lv3", "lv4").
     Do not include any markdown formatting like ```json or explanation, just the raw JSON array string.
