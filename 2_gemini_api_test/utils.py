@@ -8,9 +8,25 @@ from dotenv import load_dotenv  # 追加
 # .envファイルの中身を読み込んで、自動的にOSの環境変数にセットする
 load_dotenv()
 
+# 片付け難易度レベルの定義ファイル（Gemini用の英語版）
+LEVEL_DEFINITIONS_PATH = os.path.join(os.path.dirname(__file__), "level_en.json")
+
+
+# レベル定義JSONを読み込み、プロンプトに埋め込むためのテキストに整形する関数
+def _load_level_definitions_text() -> str:
+    with open(LEVEL_DEFINITIONS_PATH, "r", encoding="utf-8") as f:
+        levels = json.load(f)
+
+    lines = []
+    for level_id, info in levels.items():
+        examples = ", ".join(info["items"])
+        lines.append(f'- {level_id}: {info["description"]} (examples: {examples})')
+    return "\n".join(lines)
+
+
 # Gemini APIに画像を送り、生レスポンス文字列を取得する関数
 def detect_object(image_path: str) -> str:
-    
+
     # load_dotenv()のおかげで、既に環境変数にキーがセットされています。
     # セットされていない場合だけ分かりやすいエラーを出すようにします。
     if not os.environ.get("GEMINI_API_KEY"):
@@ -25,11 +41,22 @@ def detect_object(image_path: str) -> str:
     print("画像を読み込み中...")
     image = Image.open(image_path)
 
-    prompt = """
-    Analyze this messy room/desk image. 
+    level_definitions = _load_level_definitions_text()
+
+    prompt = f"""
+    Analyze this messy room/desk image.
     Identify all garbage, scattered clothes, papers, books, and small items that need to be cleaned up.
     Please do not detect items if they are in their proper place—for example, a book on a bookshelf or trash inside a trash can.
-    Output ONLY a JSON array containing objects with "name" (in English) and "box_2d" (normalized 0-1000 scale as [ymin, xmin, ymax, xmax]).
+
+    For each detected item, also classify how difficult it is to put away, using exactly one of these levels:
+    {level_definitions}
+
+    Level assignment rules (apply in this order):
+    - If an item can be disposed of with almost no effort, classify it as lv1; if disposal requires extra effort, continue with the rules below.
+    - If an item requires examining its contents to decide whether it is needed, classify it as lv4, regardless of storage visibility.
+    - Otherwise, if a suitable storage location is visible, or this category is highly likely to have a dedicated storage location in a typical home, classify it as lv2; otherwise classify it as lv3.
+
+    Output ONLY a JSON array containing objects with "name" (in English), "box_2d" (normalized 0-1000 scale as [ymin, xmin, ymax, xmax]), and "level" (one of "lv1", "lv2", "lv3", "lv4").
     Do not include any markdown formatting like ```json or explanation, just the raw JSON array string.
     """
 
@@ -65,6 +92,16 @@ def make_detections_json(response_text: str) -> str:
     print(f"JSONファイルを生成/更新しました: {output_json_path}")
     return output_json_path
 
+# レベルごとの枠色（片付けにくさが上がるほど暖色になるように設定）
+LEVEL_COLORS = {
+    "lv1": "#4CAF50",  # 緑
+    "lv2": "#FFC107",  # 黄
+    "lv3": "#FF9800",  # 橙
+    "lv4": "#F44336",  # 赤
+}
+DEFAULT_COLOR = "gray"  # levelが無い/未知の値のときの色
+
+
 # JSONファイルと画像ファイルを読み込み、バウンディングボックスを描画して保存する関数
 def draw_boxes_from_json(image_path: str) -> str:
     json_path = "detections.json"                              # 中間生成されるJSONファイル名
@@ -91,6 +128,7 @@ def draw_boxes_from_json(image_path: str) -> str:
 
     for item in detections:
         name = item.get("name", "unknown")
+        level = item.get("level")
         box = item.get("box_2d", [])
 
         if len(box) != 4:
@@ -103,12 +141,13 @@ def draw_boxes_from_json(image_path: str) -> str:
         ymax_px = (ymax / 1000.0) * height
         xmax_px = (xmax / 1000.0) * width
 
-        draw.rectangle([xmin_px, ymin_px, xmax_px, ymax_px], outline="red", width=3)
+        color = LEVEL_COLORS.get(level, DEFAULT_COLOR)
+        draw.rectangle([xmin_px, ymin_px, xmax_px, ymax_px], outline=color, width=3)
 
-        text = f"{name}"
+        text = f"{name} ({level})" if level else f"{name}"
         text_bg = [xmin_px, max(0, ymin_px - 15), xmin_px + len(text) * 7, ymin_px]
-        draw.rectangle(text_bg, fill="black")
-        draw.text((xmin_px + 2, max(0, ymin_px - 15)), text, fill="white", font=font)
+        draw.rectangle(text_bg, fill=color)
+        draw.text((xmin_px + 2, max(0, ymin_px - 15)), text, fill="black", font=font)
 
     img.save(output_image_path)
     print(f"出力画像を保存しました: {output_image_path}")
