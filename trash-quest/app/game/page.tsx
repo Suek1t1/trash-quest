@@ -21,6 +21,7 @@ export default function GamePage() {
       <main style={styles.container}>
         <div style={styles.frame}>
           <img src="/img/after.jpg" alt="お片付け後の部屋" style={styles.image} />
+          <img src="/img/gauge_full.png" alt="ゲージ(満タン)" style={styles.gauge} />
         </div>
       </main>
     );
@@ -35,6 +36,7 @@ export default function GamePage() {
     >
       <div style={styles.frame}>
         <img src="/img/image.png" alt="ゲーム画面" style={styles.image} />
+        <img src="/img/gauge_enp.png" alt="ゲージ" style={styles.gauge} />
 
         {phase === "running" && (
           <img
@@ -147,6 +149,15 @@ const styles = {
     width: "auto",
     transform: "translateY(-50%)",
     animation: "cleaner-run 2.0s linear forwards",
+    pointerEvents: "none" as const,
+  },
+  gauge: {
+    position: "absolute" as const,
+    top: "3%",
+    left: "3%",
+    // 画面(フレーム)を5分割した時の一つ分の幅
+    width: "20%",
+    height: "auto",
     pointerEvents: "none" as const,
   },
 };
