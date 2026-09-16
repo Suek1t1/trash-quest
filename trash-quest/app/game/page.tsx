@@ -15,14 +15,16 @@ type Detection = {
 type Phase = "sparkle" | "running1" | "between" | "running2" | "after";
 
 // フェーズごとの背景画像とゲージ画像
+// Between.jpgはimage.pngと同じ構図で、ベッド上の衣類(clothes)だけが片付いた状態のため
+// キラキラ表示時はclothesカテゴリを除外する
 const SCREEN_BY_PHASE: Record<
   Exclude<Phase, "after">,
-  { image: string; gauge: string; showSparkles: boolean }
+  { image: string; gauge: string; excludeNames: string[] }
 > = {
-  sparkle: { image: "/img/image.png", gauge: "/img/gauge_enp.png", showSparkles: true },
-  running1: { image: "/img/image.png", gauge: "/img/gauge_enp.png", showSparkles: true },
-  between: { image: "/img/Between.jpg", gauge: "/img/gauge_half.png", showSparkles: false },
-  running2: { image: "/img/Between.jpg", gauge: "/img/gauge_half.png", showSparkles: false },
+  sparkle: { image: "/img/image.png", gauge: "/img/gauge_enp.png", excludeNames: [] },
+  running1: { image: "/img/image.png", gauge: "/img/gauge_enp.png", excludeNames: [] },
+  between: { image: "/img/Between.jpg", gauge: "/img/gauge_half.png", excludeNames: ["clothes"] },
+  running2: { image: "/img/Between.jpg", gauge: "/img/gauge_half.png", excludeNames: ["clothes"] },
 };
 
 export default function GamePage() {
@@ -40,8 +42,11 @@ export default function GamePage() {
     );
   }
 
-  const { image, gauge, showSparkles } = SCREEN_BY_PHASE[phase];
+  const { image, gauge, excludeNames } = SCREEN_BY_PHASE[phase];
   const isRunning = phase === "running1" || phase === "running2";
+  const visibleDetections = (detections as Detection[]).filter(
+    (detection) => !excludeNames.includes(detection.name)
+  );
 
   return (
     <main
@@ -66,8 +71,7 @@ export default function GamePage() {
           />
         )}
 
-        {showSparkles &&
-          (detections as Detection[]).map((detection, index) => {
+        {visibleDetections.map((detection, index) => {
           const [ymin, xmin, ymax, xmax] = detection.box_2d;
           const left = (xmin / BOX_SCALE) * 100;
           const top = (ymin / BOX_SCALE) * 100;
