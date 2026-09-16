@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import detections from "../detections.json";
 
 // Gemini Vision APIのbox_2dは [ymin, xmin, ymax, xmax] を0〜1000で正規化した値
@@ -8,9 +11,23 @@ type Detection = {
   box_2d: [number, number, number, number];
 };
 
+type Phase = "sparkle" | "after";
+
 export default function GamePage() {
+  const [phase, setPhase] = useState<Phase>("sparkle");
+
+  if (phase === "after") {
+    return (
+      <main style={styles.container}>
+        <div style={styles.frame}>
+          <img src="/img/after.jpg" alt="お片付け後の部屋" style={styles.image} />
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main style={styles.container}>
+    <main style={styles.container} onClick={() => setPhase("after")}>
       <div style={styles.frame}>
         <img src="/img/image.png" alt="ゲーム画面" style={styles.image} />
 
