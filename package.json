@@ -1,15 +1,7 @@
 {
-<<<<<<< Updated upstream
-  "private": true,
-  "scripts": {
-    "dev": "npm --prefix ./trash-quest run dev"
-  }
-}
-=======
   "name": "trash-quest-workspace",
   "private": true,
   "scripts": {
     "dev": "npm --prefix trash-quest run dev"
   }
 }
->>>>>>> Stashed changes
