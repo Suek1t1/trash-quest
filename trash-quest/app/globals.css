@@ -167,7 +167,7 @@ body {
 
 .loot-reveal {
   position: absolute;
-  top: -18px;
+  top: -32px;
   left: 50%;
   z-index: 4;
   display: grid;

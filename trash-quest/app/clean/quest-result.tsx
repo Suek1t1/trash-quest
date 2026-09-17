@@ -490,9 +490,6 @@ function LevelUpResult({
           }}
         >
           LEVEL UP!
-          <small style={styles.levelsGained}>
-            {levelBanner}/{result.levelsGained}
-          </small>
         </div>
       )}
 
@@ -634,8 +631,8 @@ const styles = {
     filter: "drop-shadow(0 7px 7px rgba(0,0,0,0.65))",
   },
   lootImage: {
-    width: "58px",
-    height: "58px",
+    width: "160px",
+    height: "160px",
     objectFit: "contain" as const,
     filter: "drop-shadow(0 0 9px rgba(255,241,145,0.9))",
   },
@@ -723,7 +720,6 @@ const styles = {
     textShadow: "0 0 18px #fff, 0 0 28px #ffb300",
     animation: "level-up-pop 0.8s ease-out",
   },
-  levelsGained: { fontSize: "18px", verticalAlign: "middle" },
   statPanel: {
     width: "100%",
     display: "grid",
