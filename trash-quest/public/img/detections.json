@@ -1,0 +1,282 @@
+[
+  {
+    "name": "scattered clothes",
+    "box_2d": [
+      476,
+      17,
+      853,
+      311
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "clothing",
+    "box_2d": [
+      467,
+      0,
+      680,
+      143
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "clothing",
+    "box_2d": [
+      570,
+      222,
+      684,
+      276
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "bag",
+    "box_2d": [
+      127,
+      255,
+      307,
+      408
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "book",
+    "box_2d": [
+      276,
+      372,
+      338,
+      458
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "notebook",
+    "box_2d": [
+      333,
+      342,
+      420,
+      427
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "book",
+    "box_2d": [
+      426,
+      245,
+      522,
+      393
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "folder",
+    "box_2d": [
+      358,
+      548,
+      487,
+      696
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "book",
+    "box_2d": [
+      461,
+      608,
+      543,
+      703
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "open book",
+    "box_2d": [
+      372,
+      675,
+      485,
+      866
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "book",
+    "box_2d": [
+      635,
+      677,
+      764,
+      768
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "book",
+    "box_2d": [
+      619,
+      458,
+      747,
+      597
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "open book",
+    "box_2d": [
+      730,
+      423,
+      882,
+      580
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "book",
+    "box_2d": [
+      906,
+      407,
+      1000,
+      563
+    ],
+    "level": "lv2"
+  },
+  {
+    "name": "papers",
+    "box_2d": [
+      718,
+      555,
+      963,
+      742
+    ],
+    "level": "lv4"
+  },
+  {
+    "name": "card",
+    "box_2d": [
+      546,
+      528,
+      588,
+      572
+    ],
+    "level": "lv4"
+  },
+  {
+    "name": "cable",
+    "box_2d": [
+      564,
+      558,
+      638,
+      622
+    ],
+    "level": "lv3"
+  },
+  {
+    "name": "glasses case",
+    "box_2d": [
+      552,
+      608,
+      590,
+      673
+    ],
+    "level": "lv3"
+  },
+  {
+    "name": "stapler",
+    "box_2d": [
+      621,
+      638,
+      672,
+      706
+    ],
+    "level": "lv3"
+  },
+  {
+    "name": "pouch",
+    "box_2d": [
+      339,
+      272,
+      407,
+      330
+    ],
+    "level": "lv3"
+  },
+  {
+    "name": "pens in pouch",
+    "box_2d": [
+      871,
+      551,
+      999,
+      637
+    ],
+    "level": "lv3"
+  },
+  {
+    "name": "crumpled tissue",
+    "box_2d": [
+      499,
+      29,
+      560,
+      97
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled paper",
+    "box_2d": [
+      348,
+      170,
+      417,
+      219
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled tissue",
+    "box_2d": [
+      471,
+      149,
+      521,
+      187
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled paper",
+    "box_2d": [
+      861,
+      471,
+      922,
+      545
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled tissue",
+    "box_2d": [
+      901,
+      737,
+      974,
+      796
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled tissue",
+    "box_2d": [
+      839,
+      743,
+      903,
+      803
+    ],
+    "level": "lv1"
+  },
+  {
+    "name": "crumpled tissue",
+    "box_2d": [
+      802,
+      831,
+      887,
+      899
+    ],
+    "level": "lv1"
+  }
+]
