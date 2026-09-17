@@ -109,9 +109,9 @@ export default function HomePage() {
       <div style={styles.buttonContainer}>
         {/* レベリング（お掃除）ボタン */}
         <Link href="/clean" style={styles.actionCardYellow}>
-          <img src="/img/clean-home.png" alt="討伐クエスト" style={styles.actionIcon} />
+          <img src="/img/broom.png" alt="トラッシュクエスト" style={styles.actionIcon} />
           <div style={styles.actionTextGroup}>
-            <span style={styles.actionTitle}>討伐クエストへ</span>
+            <span style={styles.actionTitle}>トラッシュクエストへ</span>
             <span style={styles.actionSub}>（カメラ起動）</span>
           </div>
           <span style={styles.actionCategory}>レベリング</span>

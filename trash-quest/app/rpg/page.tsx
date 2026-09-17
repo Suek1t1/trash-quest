@@ -265,7 +265,8 @@ export default function RpgPage() {
         ) : phase === "defeat" ? (
           <div style={styles.resultWindow}>
             <Link href="/clean" style={styles.primaryLink}>
-              🧹 掃除して強くなる
+              <img src="/img/broom.png" alt="" style={styles.broomIcon} />
+              掃除して強くなる
             </Link>
             <Link href="/home" style={styles.secondaryLink}>ホームへ戻る</Link>
           </div>
@@ -565,6 +566,10 @@ const styles = {
     fontWeight: 900,
   },
   primaryLink: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "7px",
     padding: "13px",
     borderRadius: "7px",
     color: "#18100b",
@@ -574,6 +579,7 @@ const styles = {
     fontSize: "17px",
     fontWeight: 900,
   },
+  broomIcon: { width: "25px", height: "25px", objectFit: "contain" as const },
   secondaryLink: {
     color: "#fff",
     textAlign: "center" as const,
