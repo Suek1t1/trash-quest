@@ -1,6 +1,14 @@
+"use client";
+
 import Link from "next/link";
 
+import { usePlayer } from "@/lib/use-player";
+
 export default function HomePage() {
+  const player = usePlayer();
+
+  const expPercent = `${Math.min(100, (player.exp / player.expToNext) * 100)}%`;
+
   return (
     <div style={styles.container}>
       {/* 背景画像 */}
@@ -18,15 +26,17 @@ export default function HomePage() {
 
       {/* ステータス＆キャラクター表示エリア */}
       <div style={styles.statusSection}>
-        <div style={styles.levelText}>LV 12 勇者ユウタ</div>
+        <div style={styles.levelText}>LV {player.level} 勇者ユウタ</div>
         <div style={styles.expContainer}>
           <div style={styles.expBarLabel}>EXP</div>
           <div style={styles.expBarTrack}>
-            <div style={styles.expBarFill} />
+            <div style={{ ...styles.expBarFill, width: expPercent }} />
           </div>
-          <div style={styles.expText}>1240 / 2000</div>
+          <div style={styles.expText}>{player.exp} / {player.expToNext}</div>
         </div>
-        <div style={styles.nextExpText}>NEXT LVまであと 760 EXP</div>
+        <div style={styles.nextExpText}>
+          NEXT LVまであと {player.expToNext - player.exp} EXP
+        </div>
 
         {/* 中央の勇者キャラクター (hero.png) */}
         <div style={styles.heroWrapper}>
@@ -164,9 +174,9 @@ const styles = {
     overflow: "hidden",
   },
   expBarFill: {
-    width: "62%", // 1240 / 2000 = 62%
     height: "100%",
     background: "linear-gradient(90deg, #ff416c, #ff4b2b)",
+    transition: "width 0.5s ease-out",
   },
   expText: {
     color: "#fff",
