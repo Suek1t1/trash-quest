@@ -160,12 +160,17 @@ export default function RpgPage() {
 
   const enemyClass = [
     "battle-character",
+    "enemy-character",
+    floorIndex > 0 ? "flipped-character" : "",
+    floorIndex === FLOORS.length - 1 ? "boss-character" : "",
     phase === "enemy-attack" ? "enemy-attacking" : "",
     phase === "enemy-hit" ? "enemy-hit" : "",
     phase === "victory" ? "enemy-defeated" : "",
   ].join(" ");
   const heroClass = [
     "battle-character",
+    "hero-character",
+    "flipped-character",
     phase === "player-attack" ? "hero-attacking" : "",
     phase === "player-item" ? "hero-using-item" : "",
     phase === "player-hit" ? "hero-hit" : "",
@@ -178,8 +183,12 @@ export default function RpgPage() {
       className={phase === "floor-transition" ? "floor-transition" : ""}
     >
       <img
-        src="/img/background-rpg.png"
-        alt="草原の背景"
+        src={
+          floorIndex === FLOORS.length - 1
+            ? "/img/background-rpg-boss.jpg"
+            : "/img/background-rpg.png"
+        }
+        alt={floorIndex === FLOORS.length - 1 ? "ボスの間" : "草原の背景"}
         style={styles.backgroundImage}
       />
 
