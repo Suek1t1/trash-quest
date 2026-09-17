@@ -5,6 +5,11 @@ import Link from "next/link";
 // ※ Next.jsで画面遷移させるためのルーターをインポート
 import { useRouter } from "next/navigation";
 
+const DEMO_IMAGES = {
+  before: { src: "/img/demo-before.png", monsterCount: 28 },
+  after: { src: "/img/demo-after.png", monsterCount: 0 },
+};
+
 export default function CleanPage() {
   const router = useRouter();
   
@@ -16,6 +21,22 @@ export default function CleanPage() {
   // スコア（魔物の数）の記録用
   const [beforeCount, setBeforeCount] = useState<number>(0);
   const [afterCount, setAfterCount] = useState<number>(0);
+
+  // APIキーなしで画面遷移を確認するための開発用データ
+  const handleDemoImage = (isAfter: boolean = false) => {
+    const demo = isAfter ? DEMO_IMAGES.after : DEMO_IMAGES.before;
+
+    setErrorMsg(null);
+    setProcessedImage(demo.src);
+
+    if (isAfter) {
+      setAfterCount(demo.monsterCount);
+      setStep("result_confirm");
+    } else {
+      setBeforeCount(demo.monsterCount);
+      setStep("cleaning");
+    }
+  };
 
   // カメラ撮影（画像送信）の共通処理
   const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>, isAfter: boolean = false) => {
@@ -56,7 +77,7 @@ export default function CleanPage() {
           setErrorMsg(data.message || "解析に失敗しました");
           setStep(isAfter ? "cleaning" : "before"); // エラー時は前の画面に戻す
         }
-      } catch (err) {
+      } catch {
         setErrorMsg("サーバーとの通信に失敗しました。");
         setStep(isAfter ? "cleaning" : "before");
       }
@@ -84,6 +105,10 @@ export default function CleanPage() {
           <div style={styles.card}>
             <p style={styles.text}>部屋の中の「魔物（ゴミ）」を<br/>カメラで索敵しよう！</p>
             {errorMsg && <p style={styles.errorText}>{errorMsg}</p>}
+            <button type="button" onClick={() => handleDemoImage()} style={styles.demoButton}>
+              🧪 サンプル画像で試す（APIキー不要）
+            </button>
+            <p style={styles.orText}>または</p>
             <label style={styles.cameraButton}>
               📷 カメラを起動する
               <input type="file" accept="image/*" capture="environment" onChange={(e) => handleImageCapture(e, false)} style={{ display: "none" }} />
@@ -107,6 +132,9 @@ export default function CleanPage() {
             <p style={styles.textWarning}>【 {beforeCount} 体 】の魔物を発見！<br/>現実で掃除して討伐せよ！</p>
             <img src={processedImage} alt="解析結果" style={styles.resultImage} />
             <div style={styles.actionButtons}>
+              <button type="button" onClick={() => handleDemoImage(true)} style={styles.demoButton}>
+                🧪 片付け後のサンプルで再判定
+              </button>
               <label style={styles.retryButton}>
                 🧹 掃除完了！(再判定へ)
                 <input type="file" accept="image/*" capture="environment" onChange={(e) => handleImageCapture(e, true)} style={{ display: "none" }} />
@@ -148,6 +176,8 @@ const styles = {
   textWarning: { fontSize: "18px", fontWeight: "bold", color: "#ffcc00", marginBottom: "16px" },
   textSuccess: { fontSize: "18px", fontWeight: "bold", color: "#4caf50", marginBottom: "8px" },
   errorText: { color: "#ff4b2b", fontSize: "14px", marginBottom: "16px" },
+  demoButton: { width: "100%", backgroundColor: "#e6b800", color: "#111", padding: "12px", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer", border: "2px solid #fff" },
+  orText: { margin: "12px 0", fontSize: "13px", color: "#ccc" },
   cameraButton: { display: "inline-block", backgroundColor: "#e94560", color: "#fff", padding: "16px 24px", borderRadius: "8px", fontSize: "18px", fontWeight: "bold", cursor: "pointer", boxShadow: "0 4px 0 #b02a42" },
   loadingSpinner: { fontSize: "48px", animation: "spin 2s linear infinite", marginBottom: "16px" },
   resultImage: { width: "100%", maxHeight: "300px", objectFit: "contain" as const, borderRadius: "8px", border: "2px solid #fff", marginBottom: "20px" },
