@@ -1,13 +1,13 @@
 import Link from "next/link"; // Next.jsのページ移動用パーツをインポート
 
-export default function Home() {
+export default function StartPage() {
   return (
-    <Link href="/game" style={styles.container}>
+    <Link href="/home" style={styles.container}>
       {/* 背景画像 */}
-      <img src="/img/backgroung.png" alt="背景" style={styles.background} />
+      <img src="/img/background-start.png" alt="背景" style={styles.background} />
 
       {/* キャラクター */}
-      <img src="/img/man.png" alt="キャラクター" style={styles.character} />
+      <img src="/img/man-start.png" alt="キャラクター" style={styles.character} />
 
       {/* タイトルロゴ */}
       <img src="/img/title.png" alt="TRASH QUEST" style={styles.title} />
@@ -47,10 +47,10 @@ const styles = {
   },
   title: {
     position: "absolute" as const,
-    top: "5%",
+    top: "15%", // 少し見出しのバランスを調整
     left: "50%",
     transform: "translateX(-50%)",
-    width: "45%",
+    width: "100%", // 画面幅に対して少しゆとりを持たせました
     objectFit: "contain" as const,
   },
   clickText: {
@@ -62,5 +62,6 @@ const styles = {
     fontSize: "1.2rem",
     textShadow: "0 2px 4px rgba(0,0,0,0.8)",
     zIndex: 10,
+    whiteSpace: "nowrap" as const,
   },
 };

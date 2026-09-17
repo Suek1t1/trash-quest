@@ -1,0 +1,45 @@
+{
+  "lv1": {
+    "description": "Items that just need to be thrown away, and disposing of them takes almost no effort.",
+    "items": [
+      "snack wrapper",
+      "paper scrap",
+      "plastic bottle",
+      "empty can or bottle",
+      "flyer or junk mail",
+      "disposable chopsticks or cutlery"
+    ]
+  },
+  "lv2": {
+    "description": "Items that satisfy at least one of the following: (a) a storage location for this item is visible in the image, (b) no storage location is visible, but this category of item is highly likely to have a dedicated storage location in a typical home, (c) it only needs to be thrown away, but disposing of it requires extra effort.",
+    "items": [
+      "cardboard box",
+      "clothing",
+      "book",
+      "dish or tableware",
+      "towel",
+      "CD, DVD, or game software"
+    ]
+  },
+  "lv3": {
+    "description": "Items with no storage location visible in the image, and for which a dedicated storage location cannot be confidently predicted to exist — the storage destination is undetermined, though the item is clearly not trash.",
+    "items": [
+      "musical instrument",
+      "cable or charger",
+      "tool",
+      "remote control",
+      "plastic model, figurine, or ornament",
+      "accessory or watch",
+      "key",
+      "houseplant or potted plant",
+      "sports equipment (ball, racket, etc.)",
+      "empty box or paper bag"
+    ]
+  },
+  "lv4": {
+    "description": "Items that cannot be processed without examining their content to judge whether they are needed or not.",
+    "items": [
+      "documents or papers"
+    ]
+  }
+}
