@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { drawItem, ITEMS } from "@/lib/game";
 import {
   applyQuestReward,
   loadPlayer,
@@ -26,7 +27,7 @@ export type Detection = {
 
 type ImagePhase = "before" | "transition" | "after";
 type ResultScreen = "collection" | "level-up";
-type ExpStage = "start" | "gain" | "level-up" | "stats" | "skill" | "done";
+type ExpStage = "leveling" | "stats" | "skill" | "done";
 type LevelResult = QuestReward & { previousPlayer: PlayerState };
 type FlightPath = {
   index: number;
@@ -64,6 +65,9 @@ function cleanerDelay([, xmin, , xmax]: Detection["box_2d"]): number {
   return ((centerX + 0.45) / 1.65) * CLEANER_DURATION;
 }
 
+const resultWait = (milliseconds: number) =>
+  new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+
 export default function QuestResult({
   beforeImage,
   afterImage,
@@ -87,7 +91,7 @@ export default function QuestResult({
     lv4: 0,
   });
   const [collectionComplete, setCollectionComplete] = useState(false);
-  const [expStage, setExpStage] = useState<ExpStage>("start");
+  const [rewardItem] = useState(drawItem);
   const [levelResult, setLevelResult] = useState<LevelResult | null>(null);
 
   useEffect(() => {
@@ -161,29 +165,14 @@ export default function QuestResult({
     return () => timers.forEach(window.clearTimeout);
   }, [detections.length, flightPaths, imagePhase]);
 
-  useEffect(() => {
-    if (resultScreen !== "level-up") return;
-
-    const stages: [ExpStage, number][] = [
-      ["gain", 120],
-      ["level-up", 1450],
-      ["stats", 2250],
-      ["skill", 3200],
-      ["done", 4000],
-    ];
-    const timers = stages.map(([stage, delay]) =>
-      window.setTimeout(() => setExpStage(stage), delay),
-    );
-    return () => timers.forEach(window.clearTimeout);
-  }, [resultScreen]);
-
   const showLevelResult = () => {
-    if (!collectionComplete) return;
+    if (!collectionComplete || levelResult) return;
 
     const previousPlayer = loadPlayer();
     const reward = applyQuestReward(
       previousPlayer,
       detections.map((detection) => detection.level),
+      rewardItem,
     );
     savePlayer(reward.player);
     setLevelResult({ ...reward, previousPlayer });
@@ -194,8 +183,7 @@ export default function QuestResult({
     return (
       <LevelUpResult
         result={levelResult}
-        stage={expStage}
-        onComplete={() => expStage === "done" && router.push("/home")}
+        onComplete={() => router.push("/home")}
       />
     );
   }
@@ -204,7 +192,8 @@ export default function QuestResult({
     (total, count) => total + count,
     0,
   );
-  const chestOpen = collectedTotal > 0;
+  const chestOpen = collectionComplete;
+  const item = ITEMS[rewardItem];
 
   return (
     <main
@@ -305,17 +294,6 @@ export default function QuestResult({
         ))}
 
       <section style={styles.collectionPanel} aria-live="polite">
-        <div className={`treasure ${chestOpen ? "treasure-open" : ""}`}>
-          <span className="treasure-rays" aria-hidden="true" />
-          <span className="treasure-particle treasure-particle-1" aria-hidden="true">✦</span>
-          <span className="treasure-particle treasure-particle-2" aria-hidden="true">✧</span>
-          <span className="treasure-particle treasure-particle-3" aria-hidden="true">✦</span>
-          <img
-            src={chestOpen ? "/img/tresure-opened.png" : "/img/tresure-closed.png"}
-            alt={chestOpen ? "開いた宝箱" : "閉じた宝箱"}
-            style={styles.treasureImage}
-          />
-        </div>
         {RANKS.map((level) => (
           <div
             key={level}
@@ -333,6 +311,34 @@ export default function QuestResult({
             <span style={styles.count}>× {collectedCounts[level]}</span>
           </div>
         ))}
+        <div className={`treasure ${chestOpen ? "treasure-open" : ""}`}>
+          <span className="treasure-rays" aria-hidden="true" />
+          <span className="treasure-particle treasure-particle-1" aria-hidden="true">✦</span>
+          <span className="treasure-particle treasure-particle-2" aria-hidden="true">✧</span>
+          <span className="treasure-particle treasure-particle-3" aria-hidden="true">✦</span>
+          <img
+            src={chestOpen ? "/img/tresure-opened.png" : "/img/tresure-closed.png"}
+            alt={chestOpen ? "開いた宝箱" : "閉じた宝箱"}
+            style={styles.treasureImage}
+          />
+          {collectionComplete && (
+            <button
+              type="button"
+              className="loot-reveal"
+              data-tooltip={`${item.name}：${item.description}`}
+              title={`${item.name}：${item.description}`}
+              aria-label={`${item.name}。${item.description}`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <img
+                src={item.image}
+                alt=""
+                className="loot-item-image"
+                style={styles.lootImage}
+              />
+            </button>
+          )}
+        </div>
         <div
           style={{
             ...styles.total,
@@ -352,30 +358,92 @@ export default function QuestResult({
 
 function LevelUpResult({
   result,
-  stage,
   onComplete,
 }: {
   result: LevelResult;
-  stage: ExpStage;
   onComplete: () => void;
 }) {
   const { previousPlayer, player, earnedExp, unlockedSkills } = result;
-  const stageOrder: ExpStage[] = [
-    "start",
-    "gain",
-    "level-up",
-    "stats",
-    "skill",
-    "done",
-  ];
+  const [stage, setStage] = useState<ExpStage>("leveling");
+  const [displayLevel, setDisplayLevel] = useState(previousPlayer.level);
+  const [displayExp, setDisplayExp] = useState(previousPlayer.exp);
+  const [displayExpToNext, setDisplayExpToNext] = useState(
+    previousPlayer.expToNext,
+  );
+  const [gaugeWidth, setGaugeWidth] = useState(
+    (previousPlayer.exp / previousPlayer.expToNext) * 100,
+  );
+  const [gaugeTransition, setGaugeTransition] = useState("none");
+  const [levelBanner, setLevelBanner] = useState<number | null>(null);
+  const stageOrder: ExpStage[] = ["leveling", "stats", "skill", "done"];
   const atLeast = (target: ExpStage) =>
     stageOrder.indexOf(stage) >= stageOrder.indexOf(target);
-  const gaugeWidth =
-    stage === "start"
-      ? (previousPlayer.exp / previousPlayer.expToNext) * 100
-      : stage === "gain"
-        ? 100
-        : (player.exp / player.expToNext) * 100;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const animateExp = async () => {
+      const fast = result.levelsGained > 3;
+      const fillDuration = fast ? 190 : 800;
+      const resetDuration = fast ? 55 : 180;
+      let level = previousPlayer.level;
+      let expToNext = previousPlayer.expToNext;
+
+      await resultWait(180);
+      for (let index = 0; index < result.levelsGained; index += 1) {
+        if (cancelled) return;
+        setGaugeTransition(`width ${fillDuration}ms linear`);
+        setDisplayExp(expToNext);
+        setGaugeWidth(100);
+        await resultWait(fillDuration);
+        if (cancelled) return;
+
+        level += 1;
+        expToNext += 12;
+        setDisplayLevel(level);
+        setDisplayExp(0);
+        setDisplayExpToNext(expToNext);
+        setGaugeTransition("none");
+        setGaugeWidth(0);
+        setLevelBanner(index + 1);
+        await resultWait(resetDuration);
+      }
+
+      if (cancelled) return;
+      const finalFillDuration = fast ? 320 : 650;
+      setLevelBanner(null);
+      setGaugeTransition(`width ${finalFillDuration}ms ease-out`);
+      await resultWait(20);
+      setDisplayExp(player.exp);
+      setDisplayExpToNext(player.expToNext);
+      setGaugeWidth((player.exp / player.expToNext) * 100);
+      await resultWait(finalFillDuration + 180);
+      if (cancelled) return;
+
+      setStage("stats");
+      await resultWait(850);
+      if (cancelled) return;
+      if (unlockedSkills.includes("fire")) {
+        setStage("skill");
+        await resultWait(950);
+        if (cancelled) return;
+      }
+      setStage("done");
+    };
+
+    void animateExp();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    player.exp,
+    player.expToNext,
+    previousPlayer.expToNext,
+    previousPlayer.level,
+    result.levelsGained,
+    unlockedSkills,
+  ]);
+
   const statRows = [
     ["HP", previousPlayer.maxHp, player.maxHp - previousPlayer.maxHp],
     ["MP", previousPlayer.maxMp, player.maxMp - previousPlayer.maxMp],
@@ -386,7 +454,7 @@ function LevelUpResult({
   return (
     <main
       style={{ ...styles.page, cursor: stage === "done" ? "pointer" : "default" }}
-      onClick={onComplete}
+      onClick={() => stage === "done" && onComplete()}
       onKeyDown={(event) => {
         if ((event.key === "Enter" || event.key === " ") && stage === "done") {
           onComplete();
@@ -397,9 +465,7 @@ function LevelUpResult({
     >
       <div style={styles.expTitle}>EXP RESULT</div>
       <img src="/img/hero.png" alt="勇者" style={styles.resultHero} />
-      <div style={styles.levelLabel}>
-        LV {atLeast("level-up") ? player.level : previousPlayer.level}
-      </div>
+      <div style={styles.levelLabel}>LV {displayLevel}</div>
       <div style={styles.earnedExp}>獲得EXP +{earnedExp}</div>
 
       <div style={styles.expTrack}>
@@ -407,36 +473,44 @@ function LevelUpResult({
           style={{
             ...styles.expFill,
             width: `${gaugeWidth}%`,
-            transition:
-              stage === "level-up" ? "none" : "width 1.15s ease-in-out",
+            transition: gaugeTransition,
           }}
         />
       </div>
       <div style={styles.expValue}>
-        {atLeast("level-up") ? player.exp : previousPlayer.exp} / {player.expToNext}
+        {displayExp} / {displayExpToNext}
       </div>
 
-      {stage === "level-up" && <div style={styles.levelUpBanner}>LEVEL UP!</div>}
+      {levelBanner !== null && (
+        <div
+          key={levelBanner}
+          style={{
+            ...styles.levelUpBanner,
+            animationDuration: result.levelsGained > 3 ? "0.24s" : "0.8s",
+          }}
+        >
+          LEVEL UP!
+          <small style={styles.levelsGained}>
+            {levelBanner}/{result.levelsGained}
+          </small>
+        </div>
+      )}
 
-      <section
-        style={{
-          ...styles.statPanel,
-          opacity: atLeast("stats") ? 1 : 0,
-          transform: atLeast("stats") ? "translateY(0)" : "translateY(16px)",
-        }}
-      >
-        {statRows.map(([label, before, increase], index) => (
-          <div
-            key={label}
-            style={{ ...styles.statRow, animationDelay: `${index * 0.12}s` }}
-          >
-            <span>{label}</span>
-            <span>
-              {before} <strong style={styles.increase}>+{increase}</strong>
-            </span>
-          </div>
-        ))}
-      </section>
+      {atLeast("stats") && (
+        <section style={styles.statPanel}>
+          {statRows.map(([label, before, increase], index) => (
+            <div
+              key={label}
+              style={{ ...styles.statRow, animationDelay: `${index * 0.12}s` }}
+            >
+              <span>{label}</span>
+              <span>
+                {before} <strong style={styles.increase}>+{increase}</strong>
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
 
       {atLeast("skill") && unlockedSkills.includes("fire") && (
         <section style={styles.skillCard}>
@@ -554,10 +628,16 @@ const styles = {
   treasureImage: {
     position: "relative" as const,
     zIndex: 2,
-    width: "220px",
-    height: "96px",
+    width: "205px",
+    height: "88px",
     objectFit: "contain" as const,
     filter: "drop-shadow(0 7px 7px rgba(0,0,0,0.65))",
+  },
+  lootImage: {
+    width: "58px",
+    height: "58px",
+    objectFit: "contain" as const,
+    filter: "drop-shadow(0 0 9px rgba(255,241,145,0.9))",
   },
   collectionRow: {
     display: "flex",
@@ -643,6 +723,7 @@ const styles = {
     textShadow: "0 0 18px #fff, 0 0 28px #ffb300",
     animation: "level-up-pop 0.8s ease-out",
   },
+  levelsGained: { fontSize: "18px", verticalAlign: "middle" },
   statPanel: {
     width: "100%",
     display: "grid",

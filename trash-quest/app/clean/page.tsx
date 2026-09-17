@@ -47,7 +47,7 @@ export default function CleanPage() {
         <Link href="/home" style={styles.backButton}>
           ◀ ホーム
         </Link>
-        <div style={styles.title}>討伐クエスト</div>
+        <div style={styles.title}>トラッシュクエスト</div>
         <span style={styles.demoBadge}>DEMO</span>
       </header>
 
@@ -69,7 +69,12 @@ export default function CleanPage() {
                 片付けが終わったら、同じ場所からもう一度撮影しよう。
               </p>
               <CaptureButton
-                label="🧹 片付け後の写真を撮る"
+                label={
+                  <>
+                    <img src="/img/broom.png" alt="" style={styles.broomIcon} />
+                    片付け後の写真を撮る
+                  </>
+                }
                 onChange={(event) => readImage(event, setAfterImage)}
               />
             </>
@@ -100,7 +105,7 @@ function CaptureButton({
   label,
   onChange,
 }: {
-  label: string;
+  label: React.ReactNode;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
@@ -207,7 +212,10 @@ const styles = {
     letterSpacing: "0.12em",
   },
   cameraButton: {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
     padding: "15px 18px",
     color: "#fff",
     backgroundColor: "#e94560",
@@ -217,5 +225,6 @@ const styles = {
     fontSize: "16px",
     fontWeight: "bold",
   },
+  broomIcon: { width: "26px", height: "26px", objectFit: "contain" as const },
   errorText: { margin: "18px 0 0", color: "#ff8b7d", fontSize: "14px" },
 };

@@ -1,3 +1,5 @@
+import type { ItemId } from "./game";
+
 export type DetectionLevel = "lv1" | "lv2" | "lv3" | "lv4";
 
 export type PlayerState = {
@@ -9,6 +11,8 @@ export type PlayerState = {
   attack: number;
   defense: number;
   unlockedSkills: string[];
+  inventory: Record<ItemId, number>;
+  highestFloor: number;
 };
 
 export type QuestReward = {
@@ -16,21 +20,25 @@ export type QuestReward = {
   earnedExp: number;
   levelsGained: number;
   unlockedSkills: string[];
+  earnedItem: ItemId | null;
 };
 
-const STORAGE_KEY = "player_state";
+const STORAGE_KEY = "player_state_v2";
 let cachedValue: string | null | undefined;
 let cachedPlayer: PlayerState;
+const listeners = new Set<() => void>();
 
 export const DEFAULT_PLAYER: PlayerState = {
-  level: 12,
-  exp: 1240,
-  expToNext: 2000,
-  maxHp: 180,
-  maxMp: 50,
-  attack: 32,
-  defense: 24,
+  level: 1,
+  exp: 0,
+  expToNext: 75,
+  maxHp: 40,
+  maxMp: 20,
+  attack: 5,
+  defense: 2,
   unlockedSkills: [],
+  inventory: { herb: 0, potion: 0, shield: 0 },
+  highestFloor: 1,
 };
 
 export const EXP_BY_LEVEL: Record<DetectionLevel, number> = {
@@ -58,12 +66,14 @@ export function calculateQuestExp(levels: DetectionLevel[]): number {
 export function applyQuestReward(
   current: PlayerState,
   levels: DetectionLevel[],
+  earnedItem: ItemId | null = null,
 ): QuestReward {
   const earnedExp = calculateQuestExp(levels);
   const player: PlayerState = {
     ...current,
     exp: current.exp + earnedExp,
     unlockedSkills: [...current.unlockedSkills],
+    inventory: { ...current.inventory },
   };
   const unlockedSkills: string[] = [];
   let levelsGained = 0;
@@ -75,6 +85,7 @@ export function applyQuestReward(
     player.maxMp += LEVEL_UP_GROWTH.maxMp;
     player.attack += LEVEL_UP_GROWTH.attack;
     player.defense += LEVEL_UP_GROWTH.defense;
+    player.expToNext += 12;
     levelsGained += 1;
 
     for (const [skill, unlockLevel] of Object.entries(SKILL_UNLOCK_LEVEL)) {
@@ -88,25 +99,41 @@ export function applyQuestReward(
     }
   }
 
-  return { player, earnedExp, levelsGained, unlockedSkills };
+  if (earnedItem) player.inventory[earnedItem] += 1;
+
+  return { player, earnedExp, levelsGained, unlockedSkills, earnedItem };
+}
+
+function freshPlayer(): PlayerState {
+  return {
+    ...DEFAULT_PLAYER,
+    unlockedSkills: [],
+    inventory: { ...DEFAULT_PLAYER.inventory },
+  };
 }
 
 export function loadPlayer(): PlayerState {
-  if (typeof window === "undefined") return { ...DEFAULT_PLAYER };
+  if (typeof window === "undefined") return freshPlayer();
 
   const saved = window.localStorage.getItem(STORAGE_KEY);
   if (saved === cachedValue && cachedPlayer) return cachedPlayer;
 
   cachedValue = saved;
   if (!saved) {
-    cachedPlayer = { ...DEFAULT_PLAYER };
+    cachedPlayer = freshPlayer();
     return cachedPlayer;
   }
 
   try {
-    cachedPlayer = { ...DEFAULT_PLAYER, ...JSON.parse(saved) } as PlayerState;
+    const parsed = JSON.parse(saved) as Partial<PlayerState>;
+    cachedPlayer = {
+      ...freshPlayer(),
+      ...parsed,
+      unlockedSkills: parsed.unlockedSkills ?? [],
+      inventory: { ...DEFAULT_PLAYER.inventory, ...parsed.inventory },
+    };
   } catch {
-    cachedPlayer = { ...DEFAULT_PLAYER };
+    cachedPlayer = freshPlayer();
   }
   return cachedPlayer;
 }
@@ -116,14 +143,23 @@ export function savePlayer(player: PlayerState): void {
   cachedValue = value;
   cachedPlayer = player;
   window.localStorage.setItem(STORAGE_KEY, value);
+  listeners.forEach((listener) => listener());
+}
+
+export function resetPlayer(): void {
+  savePlayer(freshPlayer());
 }
 
 export function subscribePlayer(onChange: () => void): () => void {
+  listeners.add(onChange);
   const onStorage = (event: StorageEvent) => {
     if (event.key !== STORAGE_KEY) return;
     cachedValue = undefined;
     onChange();
   };
   window.addEventListener("storage", onStorage);
-  return () => window.removeEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(onChange);
+    window.removeEventListener("storage", onStorage);
+  };
 }
