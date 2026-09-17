@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 
+import { resetPlayer } from "@/lib/player";
 import { usePlayer } from "@/lib/use-player";
 
 export default function HomePage() {
   const player = usePlayer();
 
   const expPercent = `${Math.min(100, (player.exp / player.expToNext) * 100)}%`;
+  const resetDemo = () => {
+    if (window.confirm("レベル・アイテム・到達階層を初期状態に戻しますか？")) {
+      resetPlayer();
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -21,7 +27,15 @@ export default function HomePage() {
           <span style={styles.goldIcon}>🪙</span>
           <span style={styles.goldText}>1661</span>
         </div>
-        <div style={styles.menuButton}>☰</div>
+        <button
+          type="button"
+          style={styles.menuButton}
+          onClick={resetDemo}
+          aria-label="デモを初期状態に戻す"
+          title="デモをリセット"
+        >
+          ↻
+        </button>
       </div>
 
       {/* ステータス＆キャラクター表示エリア */}
@@ -37,6 +51,7 @@ export default function HomePage() {
         <div style={styles.nextExpText}>
           NEXT LVまであと {player.expToNext - player.exp} EXP
         </div>
+        <div style={styles.floorRecord}>最高到達　第{player.highestFloor}階層</div>
 
         {/* 中央の勇者キャラクター (hero.png) */}
         <div style={styles.heroWrapper}>
@@ -127,11 +142,12 @@ const styles = {
   },
   menuButton: {
     color: "#fff",
-    fontSize: "24px",
+    fontSize: "21px",
     cursor: "pointer",
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     padding: "2px 8px",
     borderRadius: "6px",
+    border: "1px solid rgba(255,255,255,0.5)",
   },
   statusSection: {
     position: "relative" as const,
@@ -187,7 +203,17 @@ const styles = {
     color: "#ddd",
     fontSize: "10px",
     textShadow: "0 1px 2px rgba(0,0,0,0.9)",
-    marginBottom: "12px",
+    marginBottom: "4px",
+  },
+  floorRecord: {
+    marginBottom: "8px",
+    padding: "3px 10px",
+    borderRadius: "999px",
+    color: "#fff4ae",
+    backgroundColor: "rgba(0,0,0,0.62)",
+    fontSize: "11px",
+    fontWeight: "bold",
+    textShadow: "0 1px 2px #000",
   },
   heroWrapper: {
     height: "180px",
