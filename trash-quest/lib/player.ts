@@ -19,6 +19,8 @@ export type QuestReward = {
 };
 
 const STORAGE_KEY = "player_state";
+let cachedValue: string | null | undefined;
+let cachedPlayer: PlayerState;
 
 export const DEFAULT_PLAYER: PlayerState = {
   level: 12,
@@ -93,15 +95,35 @@ export function loadPlayer(): PlayerState {
   if (typeof window === "undefined") return { ...DEFAULT_PLAYER };
 
   const saved = window.localStorage.getItem(STORAGE_KEY);
-  if (!saved) return { ...DEFAULT_PLAYER };
+  if (saved === cachedValue && cachedPlayer) return cachedPlayer;
+
+  cachedValue = saved;
+  if (!saved) {
+    cachedPlayer = { ...DEFAULT_PLAYER };
+    return cachedPlayer;
+  }
 
   try {
-    return { ...DEFAULT_PLAYER, ...JSON.parse(saved) } as PlayerState;
+    cachedPlayer = { ...DEFAULT_PLAYER, ...JSON.parse(saved) } as PlayerState;
   } catch {
-    return { ...DEFAULT_PLAYER };
+    cachedPlayer = { ...DEFAULT_PLAYER };
   }
+  return cachedPlayer;
 }
 
 export function savePlayer(player: PlayerState): void {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
+  const value = JSON.stringify(player);
+  cachedValue = value;
+  cachedPlayer = player;
+  window.localStorage.setItem(STORAGE_KEY, value);
+}
+
+export function subscribePlayer(onChange: () => void): () => void {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== STORAGE_KEY) return;
+    cachedValue = undefined;
+    onChange();
+  };
+  window.addEventListener("storage", onStorage);
+  return () => window.removeEventListener("storage", onStorage);
 }

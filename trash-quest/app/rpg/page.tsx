@@ -3,19 +3,42 @@
 import { useState } from "react";
 import Link from "next/link";
 
-export default function RpgPage() {
-  // バトル用のステータス管理
-  const [floor, setFloor] = useState(1);
-  const [heroHp, setHeroHp] = useState(100);
-  const [heroMp, setHeroMp] = useState(50);
-  const [slimeHp, setSlimeHp] = useState(50);
-  const [slimeMp, setSlimeMp] = useState(20);
+import { usePlayer } from "@/lib/use-player";
 
-  // 攻撃ボタンを押したときのアクション（スライムのHPを減らす）
+export default function RpgPage() {
+  const floor = 1;
+  const player = usePlayer();
+  const heroHp = player.maxHp;
+  const [spentMp, setSpentMp] = useState(0);
+  const heroMp = player.maxMp - spentMp;
+  const [slimeHp, setSlimeHp] = useState(50);
+  const slimeMp = 20;
+  const [battleMessage, setBattleMessage] = useState("コマンドを選んでください");
+
+  const fireUnlocked = player.unlockedSkills.includes("fire");
+
   const handleAttack = () => {
     if (slimeHp > 0) {
-      setSlimeHp((prev) => Math.max(0, prev - 15));
+      setSlimeHp((previous) => Math.max(0, previous - player.attack));
+      setBattleMessage(`勇者の攻撃！ ${player.attack} ダメージ`);
     }
+  };
+
+  const handleMagic = () => {
+    if (!fireUnlocked) {
+      setBattleMessage("まだ魔法を習得していない");
+      return;
+    }
+    if (heroMp < 10) {
+      setBattleMessage("MPが足りない");
+      return;
+    }
+    if (slimeHp === 0) return;
+
+    const damage = player.attack + 10;
+    setSpentMp((previous) => previous + 10);
+    setSlimeHp((previous) => Math.max(0, previous - damage));
+    setBattleMessage(`🔥 ファイア！ ${damage} ダメージ`);
   };
 
   return (
@@ -39,13 +62,13 @@ export default function RpgPage() {
             <div style={styles.gaugeRow}>
               <span style={styles.gaugeLabel}>HP</span>
               <div style={styles.gaugeBg}>
-                <div style={{ ...styles.gaugeFill, width: `${(heroHp / 100) * 100}%`, backgroundColor: "#4caf50" }}></div>
+                <div style={{ ...styles.gaugeFill, width: `${(heroHp / player.maxHp) * 100}%`, backgroundColor: "#4caf50" }}></div>
               </div>
             </div>
             <div style={styles.gaugeRow}>
               <span style={styles.gaugeLabel}>MP</span>
               <div style={styles.gaugeBg}>
-                <div style={{ ...styles.gaugeFill, width: `${(heroMp / 50) * 100}%`, backgroundColor: "#2196f3" }}></div>
+                <div style={{ ...styles.gaugeFill, width: `${(heroMp / player.maxMp) * 100}%`, backgroundColor: "#2196f3" }}></div>
               </div>
             </div>
           </div>
@@ -83,9 +106,18 @@ export default function RpgPage() {
 
       {/* ーーー 下部：コマンドウィンドウ ーーー */}
       <div style={styles.bottomUi}>
+        <div style={styles.battleMessage}>{battleMessage}</div>
         <div style={styles.commandWindow}>
           <button style={styles.commandButton} onClick={handleAttack}>攻撃</button>
-          <button style={styles.commandButton}>魔法</button>
+          <button
+            style={{
+              ...styles.commandButton,
+              opacity: fireUnlocked ? 1 : 0.45,
+            }}
+            onClick={handleMagic}
+          >
+            {fireUnlocked ? "🔥 ファイア" : "魔法（未習得）"}
+          </button>
           <button style={styles.commandButton}>アイテム</button>
           <Link href="/home" style={{ textDecoration: "none", width: "100%", display: "block" }}>
             <button style={styles.commandButton}>逃げる</button>
@@ -203,6 +235,17 @@ const styles = {
     zIndex: 10,
     padding: "16px",
     paddingBottom: "32px",
+  },
+  battleMessage: {
+    marginBottom: "8px",
+    padding: "8px 12px",
+    textAlign: "center" as const,
+    color: "#fff",
+    backgroundColor: "rgba(20, 20, 70, 0.9)",
+    border: "2px solid #fff",
+    borderRadius: "4px",
+    fontSize: "13px",
+    fontWeight: "bold",
   },
   commandWindow: {
     backgroundColor: "rgba(20, 20, 70, 0.95)",
