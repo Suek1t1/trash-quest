@@ -378,9 +378,10 @@ body {
 }
 
 .boss-character {
-  width: 210%;
-  max-width: 350px;
-  max-height: 255px;
+  width: 420%;
+  max-width: 700px;
+  max-height: 510px;
+  justify-self: start;
   margin-bottom: -9px;
 }
 
