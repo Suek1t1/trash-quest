@@ -377,14 +377,6 @@ body {
   --character-facing: -1;
 }
 
-.boss-character {
-  width: 420%;
-  max-width: 700px;
-  max-height: 510px;
-  justify-self: start;
-  margin-bottom: -9px;
-}
-
 .hero-attacking {
   animation: hero-attack 0.38s ease-in-out;
 }

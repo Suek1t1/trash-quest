@@ -50,8 +50,8 @@ export const FLOORS: EnemyDefinition[] = [
     defense: 14,
   },
   {
-    name: "グリーンドラゴン",
-    image: "/img/enemy/dragon.png",
+    name: "闇の勇者",
+    image: "/img/enemy/dark_hero.png",
     maxHp: 260,
     attack: 62,
     defense: 28,

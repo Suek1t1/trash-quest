@@ -162,7 +162,6 @@ export default function RpgPage() {
     "battle-character",
     "enemy-character",
     floorIndex > 0 ? "flipped-character" : "",
-    floorIndex === FLOORS.length - 1 ? "boss-character" : "",
     phase === "enemy-attack" ? "enemy-attacking" : "",
     phase === "enemy-hit" ? "enemy-hit" : "",
     phase === "victory" ? "enemy-defeated" : "",
