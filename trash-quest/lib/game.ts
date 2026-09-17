@@ -4,6 +4,7 @@ export type ItemDefinition = {
   name: string;
   description: string;
   image: string;
+  price: number;
 };
 
 export type EnemyDefinition = {
@@ -21,16 +22,19 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     name: "薬草",
     description: "HPを25回復",
     image: "/img/items/herbs.png",
+    price: 100,
   },
   potion: {
     name: "ポーション",
     description: "HPを60回復",
     image: "/img/items/potion.png",
+    price: 250,
   },
   shield: {
     name: "守護の盾",
     description: "次の攻撃を無効化",
     image: "/img/items/shield.png",
+    price: 500,
   },
 };
 

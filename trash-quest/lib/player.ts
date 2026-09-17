@@ -13,6 +13,7 @@ export type PlayerState = {
   unlockedSkills: string[];
   inventory: Record<ItemId, number>;
   highestFloor: number;
+  gold: number;
 };
 
 export type QuestReward = {
@@ -39,6 +40,7 @@ export const DEFAULT_PLAYER: PlayerState = {
   unlockedSkills: [],
   inventory: { herb: 0, potion: 0, shield: 0 },
   highestFloor: 1,
+  gold: 1661,
 };
 
 export const EXP_BY_LEVEL: Record<DetectionLevel, number> = {
@@ -102,6 +104,23 @@ export function applyQuestReward(
   if (earnedItem) player.inventory[earnedItem] += 1;
 
   return { player, earnedExp, levelsGained, unlockedSkills, earnedItem };
+}
+
+export function buyItem(
+  current: PlayerState,
+  itemId: ItemId,
+  price: number,
+): PlayerState | null {
+  if (current.gold < price) return null;
+
+  return {
+    ...current,
+    gold: current.gold - price,
+    inventory: {
+      ...current.inventory,
+      [itemId]: current.inventory[itemId] + 1,
+    },
+  };
 }
 
 function freshPlayer(): PlayerState {

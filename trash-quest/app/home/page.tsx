@@ -22,7 +22,7 @@ export default function HomePage() {
         <img src="/img/title.png" alt="Trash Quest" style={styles.logo} />
         <div style={styles.goldContainer}>
           <img src="/img/gold.png" alt="ゴールド" style={styles.goldIcon} />
-          <span style={styles.goldText}>1661</span>
+          <span style={styles.goldText}>{player.gold}</span>
         </div>
       </div>
 
@@ -105,26 +105,24 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 下部のアクションボタンエリア */}
+      {/* 下部のメインメニュー */}
       <div style={styles.buttonContainer}>
-        {/* レベリング（お掃除）ボタン */}
-        <Link href="/clean" style={styles.actionCardYellow}>
-          <img src="/img/broom.png" alt="トラッシュクエスト" style={styles.actionIcon} />
-          <div style={styles.actionTextGroup}>
-            <span style={styles.actionTitle}>トラッシュクエストへ</span>
-            <span style={styles.actionSub}>（カメラ起動）</span>
-          </div>
-          <span style={styles.actionCategory}>レベリング</span>
+        <Link href="/shop" style={styles.roundAction} aria-label="ショップへ">
+          <span style={styles.shopCircle} aria-hidden="true">
+            <img src="/img/shop.png" alt="" style={styles.rpgShopImage} />
+          </span>
+          <span style={styles.menuLabel}>ショップ</span>
         </Link>
 
-        {/* RPG攻略ボタン */}
-        <Link href="/rpg" style={styles.actionCardBlue}>
-          <img src="/img/rpg-home.png" alt="冒険に出る" style={styles.actionIcon} />
-          <div style={styles.actionTextGroup}>
-            <span style={styles.actionTitle}>冒険に出る</span>
-            <span style={styles.actionSub}>（ダンジョン）</span>
-          </div>
-          <span style={styles.actionCategory}>RPG攻略</span>
+        <Link href="/clean" style={styles.questAction}>
+          トラッシュ<br />クエスト
+        </Link>
+
+        <Link href="/rpg" style={styles.roundAction} aria-label="冒険に出る">
+          <span style={styles.rpgCircle}>
+            <img src="/img/rpg-home.png" alt="" style={styles.rpgMenuImage} />
+          </span>
+          <span style={styles.menuLabel}>冒険に出る</span>
         </Link>
       </div>
     </div>
@@ -357,63 +355,81 @@ const styles = {
   buttonContainer: {
     position: "relative" as const,
     zIndex: 10,
-    display: "flex",
-    gap: "12px",
-    padding: "0 16px 24px 16px",
+    display: "grid",
+    gridTemplateColumns: "1fr 1.4fr 1fr",
+    alignItems: "end",
+    gap: "8px",
+    padding: "24px 12px 20px",
+    background:
+      "linear-gradient(180deg, transparent, rgba(5,9,17,0.88) 34%)",
   },
-  actionCardYellow: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    backgroundColor: "#e6b800",
-    border: "3px solid #fff",
-    borderRadius: "12px",
-    padding: "10px",
-    textDecoration: "none",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.4)",
-  },
-  actionCardBlue: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    backgroundColor: "#4a6fa5",
-    border: "3px solid #fff",
-    borderRadius: "12px",
-    padding: "10px",
-    textDecoration: "none",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.4)",
-  },
-  actionIcon: {
-    
-    width: "200px",
-    height: "100px",
-    objectFit: "contain" as const,
-    marginBottom: "4px",
-  },
-  actionTextGroup: {
-    textAlign: "center" as const,
-    marginBottom: "4px",
-  },
-  actionTitle: {
-    display: "block",
+  roundAction: {
+    display: "grid",
+    justifyItems: "center",
+    gap: "7px",
+    minWidth: 0,
     color: "#fff",
+    textDecoration: "none",
+  },
+  shopCircle: {
+    display: "grid",
+    width: "clamp(72px, 21vw, 88px)",
+    height: "clamp(72px, 21vw, 88px)",
+    placeItems: "center",
+    border: "2px solid #fff",
+    borderRadius: "50%",
+    background: "linear-gradient(150deg, #4596bb, #1d3d59)",
+    boxShadow: "0 9px 19px rgba(0,0,0,0.52)",
+    fontSize: "clamp(30px, 9vw, 38px)",
+  },
+  questAction: {
+    display: "grid",
+    minHeight: "76px",
+    marginBottom: "26px",
+    padding: "8px 12px",
+    placeItems: "center",
+    border: "2px solid #ffe8a4",
+    borderRadius: "999px",
+    color: "#fff9e2",
+    background: "linear-gradient(155deg, #b9781f, #86392b)",
+    boxShadow: "0 11px 23px rgba(0,0,0,0.58)",
+    textAlign: "center" as const,
+    textDecoration: "none",
+    fontSize: "15px",
+    fontWeight: "bold",
+    lineHeight: 1.2,
+    textShadow: "0 2px 4px rgba(0,0,0,0.75)",
+  },
+  rpgCircle: {
+    display: "grid",
+    width: "clamp(72px, 21vw, 88px)",
+    height: "clamp(72px, 21vw, 88px)",
+    overflow: "hidden",
+    placeItems: "center",
+    border: "2px solid #fff",
+    borderRadius: "50%",
+    background: "linear-gradient(150deg, #405f83, #17283d)",
+    boxShadow: "0 9px 19px rgba(0,0,0,0.52)",
+  },
+  rpgMenuImage: {
+  width: "100%",
+  height: "100%",
+  objectFit: "contain" as const,
+  transform: "translateY(-30px)",
+  },
+  rpgShopImage: {
+    width: "60%",
+    height: "60%",
+    objectFit: "contain" as const,
+    transform: "scale(1.16)",
+  },
+  menuLabel: {
+    overflow: "hidden",
+    color: "#fff3ce",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
     fontSize: "13px",
     fontWeight: "bold",
-    textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-  },
-  actionSub: {
-    display: "block",
-    color: "#f0f0f0",
-    fontSize: "10px",
-  },
-  actionCategory: {
-    color: "#222",
-    backgroundColor: "rgba(255,255,255,0.8)",
-    fontSize: "10px",
-    fontWeight: "bold",
-    padding: "2px 8px",
-    borderRadius: "4px",
+    textShadow: "0 2px 4px rgba(0,0,0,0.9)",
   },
 };

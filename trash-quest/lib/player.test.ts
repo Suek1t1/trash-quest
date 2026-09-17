@@ -4,7 +4,7 @@ import test from "node:test";
 // @ts-expect-error Node's type-stripping runner requires the explicit extension.
 import { calculateDamage, drawItem, FLOORS } from "./game.ts";
 // @ts-expect-error Node's type-stripping runner requires the explicit extension.
-import { applyQuestReward, DEFAULT_PLAYER } from "./player.ts";
+import { applyQuestReward, buyItem, DEFAULT_PLAYER } from "./player.ts";
 
 const demoLevels = [
   ...Array(7).fill("lv1"),
@@ -30,6 +30,7 @@ test("the demo cleanup raises the player from level 1 to 13", () => {
     unlockedSkills: ["fire"],
     inventory: { herb: 0, potion: 1, shield: 0 },
     highestFloor: 1,
+    gold: 1661,
   });
 });
 
@@ -59,4 +60,20 @@ test("item draw covers all three rewards", () => {
   assert.equal(drawItem(() => 0), "herb");
   assert.equal(drawItem(() => 0.5), "potion");
   assert.equal(drawItem(() => 0.999), "shield");
+});
+
+test("buying an item spends gold and adds it to the inventory", () => {
+  const purchased = buyItem(DEFAULT_PLAYER, "potion", 250);
+
+  assert.ok(purchased);
+  assert.equal(purchased.gold, 1411);
+  assert.deepEqual(purchased.inventory, { herb: 0, potion: 1, shield: 0 });
+});
+
+test("an item cannot be bought without enough gold", () => {
+  const player = { ...DEFAULT_PLAYER, gold: 99 };
+
+  assert.equal(buyItem(player, "herb", 100), null);
+  assert.equal(player.gold, 99);
+  assert.equal(player.inventory.herb, 0);
 });
