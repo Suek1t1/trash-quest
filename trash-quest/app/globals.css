@@ -324,6 +324,215 @@ body {
   }
 }
 
+.battle-character {
+  width: 165%;
+  max-width: 280px;
+  max-height: 205px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.6));
+  transform-origin: 50% 100%;
+}
+
+.hero-attacking {
+  animation: hero-attack 0.38s ease-in-out;
+}
+
+.enemy-attacking {
+  animation: enemy-attack 0.38s ease-in-out;
+}
+
+.enemy-hit,
+.hero-hit {
+  animation: battle-hit 0.46s ease-out;
+}
+
+.hero-using-item {
+  animation: item-use 0.58s ease-out;
+}
+
+.enemy-defeated {
+  animation: enemy-defeat 0.65s ease-in forwards;
+}
+
+.hero-defeated {
+  animation: hero-defeat 0.75s ease-in forwards;
+}
+
+.damage-popup {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  z-index: 5;
+  color: #ff5959;
+  font-size: 28px;
+  font-weight: 900;
+  text-shadow: 2px 2px 0 #000, 0 0 9px #fff;
+  pointer-events: none;
+  animation: damage-pop 0.58s ease-out forwards;
+}
+
+.enemy-damage {
+  color: #fff1a6;
+}
+
+.heal-popup {
+  color: #72ff91;
+}
+
+.fire-effect {
+  position: absolute;
+  right: 30%;
+  bottom: 34%;
+  z-index: 4;
+  font-size: 58px;
+  filter: drop-shadow(0 0 12px #ff7b00);
+  pointer-events: none;
+  animation: fire-strike 0.4s ease-in forwards;
+}
+
+.battle-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(255, 38, 38, 0.34);
+  pointer-events: none;
+  animation: battle-flash 0.4s ease-out forwards;
+}
+
+.floor-transition .battle-area {
+  animation: floor-change 0.72s ease-in-out;
+}
+
+@keyframes hero-attack {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  42% {
+    filter: brightness(1.45) drop-shadow(0 0 12px #fff);
+    transform: translate(52px, -8px) rotate(7deg) scale(1.08);
+  }
+}
+
+@keyframes enemy-attack {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  42% {
+    filter: brightness(1.35) drop-shadow(0 0 12px #ff5f5f);
+    transform: translate(-52px, -5px) rotate(-7deg) scale(1.1);
+  }
+}
+
+@keyframes battle-hit {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  20% {
+    opacity: 0.25;
+    filter: brightness(2.4) saturate(0);
+    transform: translateX(-12px);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(10px);
+  }
+  60% {
+    opacity: 0.35;
+    transform: translateX(-7px);
+  }
+}
+
+@keyframes item-use {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    filter: brightness(1.7) drop-shadow(0 0 16px #8dff9e);
+    transform: translateY(-10px) scale(1.08);
+  }
+}
+
+@keyframes enemy-defeat {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  45% {
+    filter: brightness(2.4);
+    transform: scale(1.18) rotate(-5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(42px) scale(1.25, 0.08);
+  }
+}
+
+@keyframes hero-defeat {
+  to {
+    opacity: 0.45;
+    filter: grayscale(1);
+    transform: translateY(24px) rotate(-12deg) scale(0.9);
+  }
+}
+
+@keyframes damage-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.5);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.25);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -48px) scale(0.9);
+  }
+}
+
+@keyframes fire-strike {
+  0% {
+    opacity: 0;
+    transform: translate(-90px, 40px) scale(0.3) rotate(-20deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1.25) rotate(8deg);
+  }
+}
+
+@keyframes battle-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes floor-change {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  48% {
+    opacity: 0;
+    transform: translateX(-70px);
+  }
+  52% {
+    opacity: 0;
+    transform: translateX(70px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
