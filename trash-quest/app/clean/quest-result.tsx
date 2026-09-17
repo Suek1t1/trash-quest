@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -22,6 +28,19 @@ type ImagePhase = "before" | "transition" | "after";
 type ResultScreen = "collection" | "level-up";
 type ExpStage = "start" | "gain" | "level-up" | "stats" | "skill" | "done";
 type LevelResult = QuestReward & { previousPlayer: PlayerState };
+type FlightPath = {
+  index: number;
+  level: DetectionLevel;
+  left: number;
+  top: number;
+  x: number;
+  y: number;
+  scatterX: number;
+  scatterY: number;
+  delay: number;
+  backgroundSize: string;
+  backgroundPosition: string;
+};
 
 const BOX_SCALE = 1000;
 const RANKS: DetectionLevel[] = ["lv4", "lv3", "lv2", "lv1"];
@@ -31,6 +50,19 @@ const STAR_BY_LEVEL: Record<DetectionLevel, string> = {
   lv3: "★★★",
   lv4: "★★★★",
 };
+const LEVEL_COLORS: Record<DetectionLevel, string> = {
+  lv1: "#74e36f",
+  lv2: "#ffd447",
+  lv3: "#ff914d",
+  lv4: "#ff4f87",
+};
+const CLEANER_DURATION = 1800;
+const FLIGHT_DURATION = 720;
+
+function cleanerDelay([, xmin, , xmax]: Detection["box_2d"]): number {
+  const centerX = (xmin + xmax) / 2 / BOX_SCALE;
+  return ((centerX + 0.45) / 1.65) * CLEANER_DURATION;
+}
 
 export default function QuestResult({
   beforeImage,
@@ -42,23 +74,21 @@ export default function QuestResult({
   detections: Detection[];
 }) {
   const router = useRouter();
+  const pageRef = useRef<HTMLElement>(null);
+  const imageFrameRef = useRef<HTMLDivElement>(null);
+  const rankRefs = useRef<Partial<Record<DetectionLevel, HTMLDivElement | null>>>({});
   const [imagePhase, setImagePhase] = useState<ImagePhase>("before");
   const [resultScreen, setResultScreen] = useState<ResultScreen>("collection");
-  const [revealedRanks, setRevealedRanks] = useState(0);
+  const [flightPaths, setFlightPaths] = useState<FlightPath[]>([]);
+  const [collectedCounts, setCollectedCounts] = useState<Record<DetectionLevel, number>>({
+    lv1: 0,
+    lv2: 0,
+    lv3: 0,
+    lv4: 0,
+  });
   const [collectionComplete, setCollectionComplete] = useState(false);
   const [expStage, setExpStage] = useState<ExpStage>("start");
   const [levelResult, setLevelResult] = useState<LevelResult | null>(null);
-
-  const counts = useMemo(
-    () =>
-      Object.fromEntries(
-        RANKS.map((level) => [
-          level,
-          detections.filter((detection) => detection.level === level).length,
-        ]),
-      ) as Record<DetectionLevel, number>,
-    [detections],
-  );
 
   useEffect(() => {
     const transitionTimer = window.setTimeout(
@@ -68,20 +98,68 @@ export default function QuestResult({
     return () => window.clearTimeout(transitionTimer);
   }, []);
 
-  useEffect(() => {
-    if (imagePhase !== "after") return;
+  useLayoutEffect(() => {
+    if (imagePhase !== "transition") return;
+    const page = pageRef.current?.getBoundingClientRect();
+    const frame = imageFrameRef.current?.getBoundingClientRect();
+    if (!page || !frame) return;
 
-    const timers = RANKS.map((_, index) =>
-      window.setTimeout(() => setRevealedRanks(index + 1), 350 * (index + 1)),
+    setFlightPaths(
+      detections.flatMap((detection, index) => {
+        const target = rankRefs.current[detection.level]?.getBoundingClientRect();
+        if (!target) return [];
+
+        const [ymin, xmin, ymax, xmax] = detection.box_2d;
+        const centerX = (xmin + xmax) / 2 / BOX_SCALE;
+        const centerY = (ymin + ymax) / 2 / BOX_SCALE;
+        const startX = frame.left - page.left + frame.width * centerX;
+        const startY = frame.top - page.top + frame.height * centerY;
+        const targetX = target.left - page.left + 44 + (index % 4) * 4;
+        const targetY = target.top - page.top + target.height / 2 + ((index % 3) - 1) * 4;
+        const boxWidth = Math.max(1, xmax - xmin);
+        const boxHeight = Math.max(1, ymax - ymin);
+
+        return [{
+          index,
+          level: detection.level,
+          left: startX - 17,
+          top: startY - 17,
+          x: targetX - startX,
+          y: targetY - startY,
+          scatterX: (index % 2 === 0 ? -1 : 1) * (18 + (index % 4) * 6),
+          scatterY: -20 - (index % 3) * 8,
+          delay: cleanerDelay(detection.box_2d),
+          backgroundSize: `${(BOX_SCALE / boxWidth) * 100}% ${(BOX_SCALE / boxHeight) * 100}%`,
+          backgroundPosition: `${(xmin / Math.max(1, BOX_SCALE - boxWidth)) * 100}% ${(ymin / Math.max(1, BOX_SCALE - boxHeight)) * 100}%`,
+        }];
+      }),
     );
-    timers.push(
+  }, [detections, imagePhase]);
+
+  useEffect(() => {
+    if (imagePhase !== "transition" || flightPaths.length !== detections.length) {
+      return;
+    }
+
+    const timers = flightPaths.map((path) =>
       window.setTimeout(
-        () => setCollectionComplete(true),
-        350 * RANKS.length + 450,
+        () =>
+          setCollectedCounts((current) => ({
+            ...current,
+            [path.level]: current[path.level] + 1,
+          })),
+        path.delay + FLIGHT_DURATION - 90,
       ),
     );
+    const finalDelay = Math.max(...flightPaths.map(({ delay }) => delay), CLEANER_DURATION);
+    timers.push(
+      window.setTimeout(() => {
+        setImagePhase("after");
+        setCollectionComplete(true);
+      }, finalDelay + FLIGHT_DURATION + 180),
+    );
     return () => timers.forEach(window.clearTimeout);
-  }, [imagePhase]);
+  }, [detections.length, flightPaths, imagePhase]);
 
   useEffect(() => {
     if (resultScreen !== "level-up") return;
@@ -122,10 +200,15 @@ export default function QuestResult({
     );
   }
 
-  const activeImage = imagePhase === "after" ? afterImage : beforeImage;
+  const collectedTotal = Object.values(collectedCounts).reduce(
+    (total, count) => total + count,
+    0,
+  );
+  const chestOpen = collectedTotal > 0;
 
   return (
     <main
+      ref={pageRef}
       style={{ ...styles.page, cursor: collectionComplete ? "pointer" : "default" }}
       onClick={showLevelResult}
       onKeyDown={(event) => {
@@ -139,18 +222,26 @@ export default function QuestResult({
         <strong>魔物回収リザルト</strong>
       </div>
 
-      <div style={styles.imageFrame}>
+      <div ref={imageFrameRef} style={styles.imageFrame}>
         <img
-          src={activeImage}
+          src={imagePhase === "after" ? afterImage : beforeImage}
           alt={imagePhase === "after" ? "片付け後の部屋" : "片付け前の部屋"}
-          style={{
-            ...styles.resultImage,
-            animation:
-              imagePhase === "after" ? "result-image-in 0.7s ease-out" : undefined,
-          }}
+          style={styles.resultImage}
         />
+        {imagePhase === "transition" && (
+          <img
+            src={afterImage}
+            alt=""
+            aria-hidden="true"
+            style={styles.afterWipe}
+          />
+        )}
         <span style={styles.imageLabel}>
-          {imagePhase === "after" ? "AFTER" : "BEFORE"}
+          {imagePhase === "after"
+            ? "AFTER"
+            : imagePhase === "transition"
+              ? "CLEANING"
+              : "BEFORE"}
         </span>
 
         {imagePhase !== "after" &&
@@ -165,7 +256,13 @@ export default function QuestResult({
                   left: `${(xmin / BOX_SCALE) * 100}%`,
                   width: `${((xmax - xmin) / BOX_SCALE) * 100}%`,
                   height: `${((ymax - ymin) / BOX_SCALE) * 100}%`,
-                  animationDelay: `${(index % 5) * 0.18}s`,
+                  color: LEVEL_COLORS[detection.level],
+                  animation:
+                    imagePhase === "transition"
+                      ? `trash-disperse 520ms ease-out ${cleanerDelay(detection.box_2d)}ms forwards`
+                      : "sparkle-glow 1.6s ease-in-out infinite",
+                  animationDelay:
+                    imagePhase === "transition" ? undefined : `${(index % 5) * 0.18}s`,
                 }}
               >
                 ✨
@@ -178,24 +275,62 @@ export default function QuestResult({
             src="/img/cleaner.png"
             alt="お掃除係"
             style={styles.runningCleaner}
-            onAnimationEnd={() => setImagePhase("after")}
           />
         )}
       </div>
 
+      {imagePhase === "transition" &&
+        flightPaths.map((path) => (
+          <span
+            key={path.index}
+            className="trash-flight"
+            aria-hidden="true"
+            style={{
+              left: path.left,
+              top: path.top,
+              backgroundImage: `url(${beforeImage})`,
+              backgroundSize: path.backgroundSize,
+              backgroundPosition: path.backgroundPosition,
+              borderColor: LEVEL_COLORS[path.level],
+              boxShadow: `0 0 8px #fff, 0 0 16px ${LEVEL_COLORS[path.level]}`,
+              animationDelay: `${path.delay}ms`,
+              "--flight-x": `${path.x}px`,
+              "--flight-y": `${path.y}px`,
+              "--scatter-x": `${path.scatterX}px`,
+              "--scatter-y": `${path.scatterY}px`,
+            } as CSSProperties}
+          >
+            ✦
+          </span>
+        ))}
+
       <section style={styles.collectionPanel} aria-live="polite">
-        {RANKS.map((level, index) => (
+        <div className={`treasure ${chestOpen ? "treasure-open" : ""}`}>
+          <span className="treasure-rays" aria-hidden="true" />
+          <span className="treasure-particle treasure-particle-1" aria-hidden="true">✦</span>
+          <span className="treasure-particle treasure-particle-2" aria-hidden="true">✧</span>
+          <span className="treasure-particle treasure-particle-3" aria-hidden="true">✦</span>
+          <img
+            src={chestOpen ? "/img/tresure-opened.png" : "/img/tresure-closed.png"}
+            alt={chestOpen ? "開いた宝箱" : "閉じた宝箱"}
+            style={styles.treasureImage}
+          />
+        </div>
+        {RANKS.map((level) => (
           <div
             key={level}
+            ref={(node) => {
+              rankRefs.current[level] = node;
+            }}
             style={{
               ...styles.collectionRow,
-              opacity: revealedRanks > index ? 1 : 0,
-              transform:
-                revealedRanks > index ? "translateY(0)" : "translateY(12px)",
+              color: LEVEL_COLORS[level],
+              opacity: collectedCounts[level] > 0 ? 1 : 0.42,
+              transform: collectedCounts[level] > 0 ? "scale(1)" : "scale(0.98)",
             }}
           >
             <span style={styles.stars}>{STAR_BY_LEVEL[level]}</span>
-            <span style={styles.count}>× {counts[level]}</span>
+            <span style={styles.count}>× {collectedCounts[level]}</span>
           </div>
         ))}
         <div
@@ -204,7 +339,7 @@ export default function QuestResult({
             opacity: collectionComplete ? 1 : 0,
           }}
         >
-          合計 {detections.length} 個回収！
+          合計 {collectedTotal} 個回収！
         </div>
       </section>
 
@@ -365,6 +500,16 @@ const styles = {
     display: "block",
     objectFit: "cover" as const,
   },
+  afterWipe: {
+    position: "absolute" as const,
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    display: "block",
+    objectFit: "cover" as const,
+    clipPath: "inset(0 100% 0 0)",
+    animation: `after-wipe ${CLEANER_DURATION}ms linear forwards`,
+  },
   imageLabel: {
     position: "absolute" as const,
     top: "10px",
@@ -401,26 +546,39 @@ const styles = {
   },
   collectionPanel: {
     width: "100%",
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "8px",
-    marginTop: "16px",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "2px",
+    marginTop: "8px",
+  },
+  treasureImage: {
+    position: "relative" as const,
+    zIndex: 2,
+    width: "220px",
+    height: "96px",
+    objectFit: "contain" as const,
+    filter: "drop-shadow(0 7px 7px rgba(0,0,0,0.65))",
   },
   collectionRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "10px 12px",
-    border: "1px solid rgba(255,226,138,0.28)",
-    borderRadius: "9px",
-    backgroundColor: "rgba(255,215,0,0.08)",
-    transition: "opacity 0.3s, transform 0.3s",
+    minHeight: "34px",
+    padding: "4px 44px",
+    borderBottom: "1px solid rgba(255,255,255,0.09)",
+    background:
+      "linear-gradient(90deg, transparent, rgba(255,255,255,0.045), transparent)",
+    transition: "opacity 0.25s, transform 0.25s, filter 0.25s",
   },
-  stars: { color: "#ffe066", fontSize: "12px", letterSpacing: "-0.08em" },
-  count: { fontWeight: "bold", fontSize: "17px" },
+  stars: {
+    minWidth: "92px",
+    fontSize: "18px",
+    letterSpacing: "-0.06em",
+    textShadow: "0 0 9px currentColor",
+  },
+  count: { fontWeight: "bold", fontSize: "20px" },
   total: {
-    gridColumn: "1 / -1",
-    paddingTop: "5px",
+    paddingTop: "7px",
     textAlign: "center" as const,
     color: "#ffe28a",
     fontSize: "20px",
