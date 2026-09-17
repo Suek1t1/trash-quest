@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { drawItem, ITEMS } from "@/lib/game";
 import {
   applyQuestReward,
   loadPlayer,
@@ -87,6 +88,7 @@ export default function QuestResult({
     lv4: 0,
   });
   const [collectionComplete, setCollectionComplete] = useState(false);
+  const [rewardItem] = useState(drawItem);
   const [expStage, setExpStage] = useState<ExpStage>("start");
   const [levelResult, setLevelResult] = useState<LevelResult | null>(null);
 
@@ -178,12 +180,13 @@ export default function QuestResult({
   }, [resultScreen]);
 
   const showLevelResult = () => {
-    if (!collectionComplete) return;
+    if (!collectionComplete || levelResult) return;
 
     const previousPlayer = loadPlayer();
     const reward = applyQuestReward(
       previousPlayer,
       detections.map((detection) => detection.level),
+      rewardItem,
     );
     savePlayer(reward.player);
     setLevelResult({ ...reward, previousPlayer });
@@ -204,7 +207,8 @@ export default function QuestResult({
     (total, count) => total + count,
     0,
   );
-  const chestOpen = collectedTotal > 0;
+  const chestOpen = collectionComplete;
+  const item = ITEMS[rewardItem];
 
   return (
     <main
@@ -315,6 +319,15 @@ export default function QuestResult({
             alt={chestOpen ? "開いた宝箱" : "閉じた宝箱"}
             style={styles.treasureImage}
           />
+          {collectionComplete && (
+            <div className="loot-reveal">
+              <img src={item.image} alt={item.name} style={styles.lootImage} />
+              <div style={styles.lootCopy}>
+                <strong>{item.name}を獲得！</strong>
+                <span>{item.description}</span>
+              </div>
+            </div>
+          )}
         </div>
         {RANKS.map((level) => (
           <div
@@ -360,6 +373,7 @@ function LevelUpResult({
   onComplete: () => void;
 }) {
   const { previousPlayer, player, earnedExp, unlockedSkills } = result;
+  const [displayLevel, setDisplayLevel] = useState(previousPlayer.level);
   const stageOrder: ExpStage[] = [
     "start",
     "gain",
@@ -370,6 +384,21 @@ function LevelUpResult({
   ];
   const atLeast = (target: ExpStage) =>
     stageOrder.indexOf(stage) >= stageOrder.indexOf(target);
+
+  useEffect(() => {
+    if (stage !== "level-up" || result.levelsGained === 0) return;
+
+    const timer = window.setInterval(() => {
+      setDisplayLevel((current) => {
+        if (current >= player.level) {
+          window.clearInterval(timer);
+          return player.level;
+        }
+        return current + 1;
+      });
+    }, 60);
+    return () => window.clearInterval(timer);
+  }, [player.level, result.levelsGained, stage]);
   const gaugeWidth =
     stage === "start"
       ? (previousPlayer.exp / previousPlayer.expToNext) * 100
@@ -398,7 +427,7 @@ function LevelUpResult({
       <div style={styles.expTitle}>EXP RESULT</div>
       <img src="/img/hero.png" alt="勇者" style={styles.resultHero} />
       <div style={styles.levelLabel}>
-        LV {atLeast("level-up") ? player.level : previousPlayer.level}
+        LV {atLeast("level-up") ? displayLevel : previousPlayer.level}
       </div>
       <div style={styles.earnedExp}>獲得EXP +{earnedExp}</div>
 
@@ -416,7 +445,11 @@ function LevelUpResult({
         {atLeast("level-up") ? player.exp : previousPlayer.exp} / {player.expToNext}
       </div>
 
-      {stage === "level-up" && <div style={styles.levelUpBanner}>LEVEL UP!</div>}
+      {stage === "level-up" && (
+        <div style={styles.levelUpBanner}>
+          LEVEL UP!<small style={styles.levelsGained}> ×{result.levelsGained}</small>
+        </div>
+      )}
 
       <section
         style={{
@@ -559,6 +592,21 @@ const styles = {
     objectFit: "contain" as const,
     filter: "drop-shadow(0 7px 7px rgba(0,0,0,0.65))",
   },
+  lootImage: {
+    width: "68px",
+    height: "68px",
+    flex: "0 0 auto",
+    objectFit: "contain" as const,
+    filter: "drop-shadow(0 0 9px rgba(255,241,145,0.9))",
+  },
+  lootCopy: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "2px",
+    color: "#fff4ae",
+    fontSize: "15px",
+    textShadow: "0 2px 4px #000",
+  },
   collectionRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -643,6 +691,7 @@ const styles = {
     textShadow: "0 0 18px #fff, 0 0 28px #ffb300",
     animation: "level-up-pop 0.8s ease-out",
   },
+  levelsGained: { fontSize: "18px", verticalAlign: "middle" },
   statPanel: {
     width: "100%",
     display: "grid",
