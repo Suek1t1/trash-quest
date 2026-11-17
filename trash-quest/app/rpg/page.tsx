@@ -3,15 +3,48 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { calculateDamage, FLOORS, ITEMS, type ItemId } from "@/lib/game";
+import {
+  applyStatus,
+  canAct,
+  emptyStatuses,
+  healedAmount,
+  heroAttackPower,
+  hpAfterDamage,
+  magicDamage,
+  physicalDamage,
+  poisonDamage,
+  statusAdjustedAttack,
+  tickStatuses,
+  type StatusEffects,
+} from "@/lib/battle";
+import {
+  calculateDamage,
+  ELEMENTS,
+  FLOORS,
+  ITEM_IDS,
+  ITEMS,
+  pickElement,
+  SKILLS,
+  SKILL_IDS,
+  STATUSES,
+  STATUS_IDS,
+  type ItemId,
+  type SkillId,
+  type StatusId,
+} from "@/lib/game";
 import { savePlayer } from "@/lib/player";
 import { usePlayer } from "@/lib/use-player";
+import ItemMenu from "./ItemMenu";
+import MagicMenu from "./MagicMenu";
+import StatusGauge from "./StatusGauge";
 
 type BattlePhase =
   | "ready"
   | "player-attack"
   | "enemy-hit"
   | "player-item"
+  | "player-cast"
+  | "enemy-idle"
   | "enemy-attack"
   | "player-hit"
   | "victory"
@@ -38,61 +71,174 @@ export default function RpgPage() {
   );
   const [lastDamage, setLastDamage] = useState(0);
   const [itemMenuOpen, setItemMenuOpen] = useState(false);
+  const [magicMenuOpen, setMagicMenuOpen] = useState(false);
+  const [effectIcon, setEffectIcon] = useState("🔥");
+  const [attackBoosted, setAttackBoosted] = useState(false);
+  const [enemyStatus, setEnemyStatus] = useState<StatusEffects>(emptyStatuses);
 
-  const fireUnlocked = player.unlockedSkills.includes("fire");
+  const learnedSkills = SKILL_IDS.filter((id) =>
+    player.unlockedSkills.includes(id),
+  );
+  const ownedItemIds = ITEM_IDS.filter((id) => inventory[id] > 0);
+  const heroAttack = heroAttackPower(player.attack, attackBoosted);
   const busy = phase !== "ready";
 
-  const enemyTurn = async (blockAttack = false, currentHeroHp = heroHp) => {
-    setPhase("enemy-attack");
-    setBattleMessage(`${enemy.name}の攻撃！`);
-    await wait(380);
-
-    const damage = blockAttack
-      ? 0
-      : calculateDamage(enemy.attack, player.defense);
-    const nextHp = Math.max(0, currentHeroHp - damage);
-    setLastDamage(damage);
-    setHeroHp(nextHp);
-    setPhase("player-hit");
-    setBattleMessage(
-      blockAttack
-        ? "守護の盾が攻撃を防いだ！"
-        : `${damage}ダメージを受けた！`,
-    );
-    await wait(480);
-
-    if (nextHp === 0) {
-      setPhase("defeat");
-      setBattleMessage("力尽きてしまった… 掃除して強くなろう！");
+  // 敵の番。眠りなら行動せず、ターンの最後に毒ダメージと状態異常のターン経過を処理する
+  const enemyTurn = async ({
+    heroHp: currentHeroHp,
+    enemyHp: currentEnemyHp,
+    statuses,
+    blockAttack = false,
+  }: {
+    heroHp: number;
+    enemyHp: number;
+    statuses: StatusEffects;
+    blockAttack?: boolean;
+  }) => {
+    if (!canAct(statuses)) {
+      setPhase("enemy-idle");
+      setBattleMessage(`${STATUSES.sleep.icon} ${enemy.name}は眠っていて動けない！`);
+      await wait(700);
     } else {
-      setPhase("ready");
-      setBattleMessage("コマンドを選んでください");
+      setPhase("enemy-attack");
+      setBattleMessage(`${enemy.name}の攻撃！`);
+      await wait(380);
+
+      const damage = blockAttack
+        ? 0
+        : calculateDamage(
+            statusAdjustedAttack(enemy.attack, statuses),
+            player.defense,
+          );
+      const nextHeroHp = hpAfterDamage(currentHeroHp, damage);
+      setLastDamage(damage);
+      setHeroHp(nextHeroHp);
+      setPhase("player-hit");
+      setBattleMessage(
+        blockAttack
+          ? "守護の盾が攻撃を防いだ！"
+          : `${damage}ダメージを受けた！`,
+      );
+      await wait(480);
+
+      if (nextHeroHp === 0) {
+        setPhase("defeat");
+        setBattleMessage("力尽きてしまった… 掃除して強くなろう！");
+        return;
+      }
     }
+
+    if (statuses.poison > 0) {
+      const damage = poisonDamage(enemy.maxHp);
+      const nextEnemyHp = hpAfterDamage(currentEnemyHp, damage);
+      setLastDamage(damage);
+      setEnemyHp(nextEnemyHp);
+      setPhase("enemy-hit");
+      setBattleMessage(`${STATUSES.poison.icon} 毒で${enemy.name}に${damage}ダメージ！`);
+      await wait(560);
+
+      if (nextEnemyHp === 0) {
+        setPhase("victory");
+        setBattleMessage(`${enemy.name}を倒した！`);
+        return;
+      }
+    }
+
+    const { next, cured } = tickStatuses(statuses);
+    setEnemyStatus(next);
+    setPhase("ready");
+    setBattleMessage(
+      cured.length > 0
+        ? `${enemy.name}の${cured.map((id) => STATUSES[id].name).join("・")}が治った！`
+        : "コマンドを選んでください",
+    );
   };
 
-  const playerAttack = async (magic = false) => {
-    if (busy || enemyHp === 0) return;
-    if (magic && !fireUnlocked) {
-      setBattleMessage("まだ魔法を習得していない");
+  // 敵に状態異常を付ける(魔法・アイテム共通)
+  const inflictStatus = async (status: StatusId, label: string) => {
+    const nextStatuses = applyStatus(enemyStatus, status);
+    setEnemyStatus(nextStatuses);
+    setLastAction("item");
+    setPhase("player-cast");
+    setBattleMessage(
+      `${label} ${enemy.name}は${STATUSES[status].name}になった！`,
+    );
+    await wait(600);
+    await enemyTurn({ heroHp, enemyHp, statuses: nextStatuses });
+  };
+
+  const castBuff = async (skillId: SkillId) => {
+    const skill = SKILLS[skillId];
+    if (heroMp < skill.mpCost) {
+      setBattleMessage("MPが足りない");
       return;
     }
-    if (magic && heroMp < 10) {
+    if (attackBoosted) {
+      setBattleMessage("すでに攻撃力が上がっている");
+      return;
+    }
+
+    setMagicMenuOpen(false);
+    setItemMenuOpen(false);
+    setLastAction("item");
+    setPhase("player-cast");
+    setHeroMp((current) => current - skill.mpCost);
+    setAttackBoosted(true);
+    setBattleMessage(`${skill.icon} ${skill.name}！ 攻撃力が1.1倍になった！`);
+    await wait(520);
+    await enemyTurn({ heroHp, enemyHp, statuses: enemyStatus });
+  };
+
+  const castStatusSpell = async (skillId: SkillId) => {
+    const skill = SKILLS[skillId];
+    if (!skill.status) return;
+    if (heroMp < skill.mpCost) {
       setBattleMessage("MPが足りない");
       return;
     }
 
+    setMagicMenuOpen(false);
     setItemMenuOpen(false);
+    setHeroMp((current) => current - skill.mpCost);
+    await inflictStatus(skill.status, `${skill.icon} ${skill.name}！`);
+  };
+
+  const playerAttack = async (skillId: SkillId | null = null) => {
+    if (busy || enemyHp === 0) return;
+    const skill = skillId ? SKILLS[skillId] : null;
+    if (skillId && skill) {
+      if (!player.unlockedSkills.includes(skillId)) {
+        setBattleMessage("まだ魔法を習得していない");
+        return;
+      }
+      if (skill.kind === "buff") {
+        await castBuff(skillId);
+        return;
+      }
+      if (skill.kind === "status") {
+        await castStatusSpell(skillId);
+        return;
+      }
+      if (heroMp < skill.mpCost) {
+        setBattleMessage("MPが足りない");
+        return;
+      }
+    }
+    const magic = skill !== null;
+
+    setItemMenuOpen(false);
+    setMagicMenuOpen(false);
     setLastAction(magic ? "magic" : "attack");
+    if (skill) setEffectIcon(skill.icon);
     setPhase("player-attack");
-    setBattleMessage(magic ? "🔥 ファイア！" : "勇者の攻撃！");
-    if (magic) setHeroMp((current) => current - 10);
+    setBattleMessage(skill ? `${skill.icon} ${skill.name}！` : "勇者の攻撃！");
+    if (skill) setHeroMp((current) => current - skill.mpCost);
     await wait(380);
 
-    const damage = calculateDamage(
-      player.attack + (magic ? 20 : 0),
-      enemy.defense,
-    );
-    const nextHp = Math.max(0, enemyHp - damage);
+    const damage = magic
+      ? magicDamage(heroAttack, enemy.defense)
+      : physicalDamage(heroAttack, enemy.defense);
+    const nextHp = hpAfterDamage(enemyHp, damage);
     setLastDamage(damage);
     setEnemyHp(nextHp);
     setPhase("enemy-hit");
@@ -103,13 +249,15 @@ export default function RpgPage() {
       setPhase("victory");
       setBattleMessage(`${enemy.name}を倒した！`);
     } else {
-      await enemyTurn();
+      await enemyTurn({ heroHp, enemyHp: nextHp, statuses: enemyStatus });
     }
   };
 
   const handleItem = async (itemId: ItemId) => {
-    if (busy || inventory[itemId] === 0) return;
-    if (itemId !== "shield" && heroHp === player.maxHp) {
+    if (busy || inventory[itemId] === 0 || enemyHp === 0) return;
+    const item = ITEMS[itemId];
+    const effect = item.effect;
+    if (effect.type === "heal" && heroHp === player.maxHp) {
       setBattleMessage("HPは満タンだ");
       return;
     }
@@ -121,24 +269,68 @@ export default function RpgPage() {
     setInventory(nextInventory);
     savePlayer({ ...player, inventory: nextInventory });
     setItemMenuOpen(false);
-    setLastAction("item");
-    setPhase("player-item");
 
-    if (itemId === "shield") {
-      setLastDamage(0);
-      setBattleMessage("守護の盾を構えた！");
-      await wait(520);
-      await enemyTurn(true);
+    if (effect.type === "damage") {
+      const element =
+        effect.element === "random"
+          ? pickElement()
+          : effect.element;
+      const { name: elementName, icon } = ELEMENTS[element];
+      setLastAction("magic");
+      setEffectIcon(icon);
+      setPhase("player-attack");
+      setBattleMessage(`${icon} ${item.name}を使った！ ${elementName}属性！`);
+      await wait(380);
+
+      const damage = magicDamage(heroAttack, enemy.defense, effect.multiplier);
+      const nextHp = hpAfterDamage(enemyHp, damage);
+      setLastDamage(damage);
+      setEnemyHp(nextHp);
+      setPhase("enemy-hit");
+      setBattleMessage(`${enemy.name}に${damage}ダメージ！`);
+      await wait(460);
+
+      if (nextHp === 0) {
+        setPhase("victory");
+        setBattleMessage(`${enemy.name}を倒した！`);
+      } else {
+        await enemyTurn({ heroHp, enemyHp: nextHp, statuses: enemyStatus });
+      }
       return;
     }
 
-    const recovery = itemId === "herb" ? 25 : 60;
-    const recoveredHp = Math.min(player.maxHp, heroHp + recovery);
-    setLastDamage(recoveredHp - heroHp);
+    if (effect.type === "status") {
+      await inflictStatus(effect.status, `${item.name}を使った！`);
+      return;
+    }
+
+    setLastAction("item");
+    setPhase("player-item");
+
+    if (effect.type === "guard") {
+      setLastDamage(0);
+      setBattleMessage("守護の盾を構えた！");
+      await wait(520);
+      await enemyTurn({
+        heroHp,
+        enemyHp,
+        statuses: enemyStatus,
+        blockAttack: true,
+      });
+      return;
+    }
+
+    const healed = healedAmount(heroHp, player.maxHp, effect.amount);
+    const recoveredHp = heroHp + healed;
+    setLastDamage(healed);
     setHeroHp(recoveredHp);
-    setBattleMessage(`${ITEMS[itemId].name}でHPを${recoveredHp - heroHp}回復！`);
+    setBattleMessage(`${ITEMS[itemId].name}でHPを${healed}回復！`);
     await wait(620);
-    await enemyTurn(false, recoveredHp);
+    await enemyTurn({
+      heroHp: recoveredHp,
+      enemyHp,
+      statuses: enemyStatus,
+    });
   };
 
   const goToNextFloor = async () => {
@@ -152,6 +344,7 @@ export default function RpgPage() {
     await wait(720);
     setFloorIndex(nextFloor);
     setEnemyHp(FLOORS[nextFloor].maxHp);
+    setEnemyStatus(emptyStatuses());
     setPhase("ready");
     setBattleMessage(
       `${FLOORS[nextFloor].name}が現れた！ コマンドを選んでください`,
@@ -171,7 +364,7 @@ export default function RpgPage() {
     "hero-character",
     "flipped-character",
     phase === "player-attack" ? "hero-attacking" : "",
-    phase === "player-item" ? "hero-using-item" : "",
+    phase === "player-item" || phase === "player-cast" ? "hero-using-item" : "",
     phase === "player-hit" ? "hero-hit" : "",
     phase === "defeat" ? "hero-defeated" : "",
   ].join(" ");
@@ -225,12 +418,19 @@ export default function RpgPage() {
 
         <div style={styles.characterWrapper}>
           <div style={styles.characterStage}>
-            <img src={enemy.image} alt={enemy.name} className={enemyClass} />
+            <img
+              src={enemy.image}
+              alt={enemy.name}
+              className={enemyClass}
+              style={enemyStatus.sleep > 0 ? { filter: "brightness(0.6)" } : undefined}
+            />
             {phase === "enemy-hit" && (
               <span className="damage-popup enemy-damage">-{lastDamage}</span>
             )}
             {phase === "player-attack" && lastAction === "magic" && (
-              <span className="fire-effect" aria-hidden="true">🔥</span>
+              <span className="fire-effect" aria-hidden="true">
+                {effectIcon}
+              </span>
             )}
           </div>
           <strong style={styles.characterName}>{enemy.name}</strong>
@@ -240,6 +440,14 @@ export default function RpgPage() {
             max={enemy.maxHp}
             color="#ef5350"
           />
+          <div style={styles.statusRow}>
+            {STATUS_IDS.filter((id) => enemyStatus[id] > 0).map((id) => (
+              <span key={id} style={styles.statusBadge}>
+                {STATUSES[id].icon}
+                {enemyStatus[id]}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -270,51 +478,46 @@ export default function RpgPage() {
             </Link>
             <Link href="/home" style={styles.secondaryLink}>ホームへ戻る</Link>
           </div>
+        ) : magicMenuOpen ? (
+          <MagicMenu
+            skillIds={learnedSkills}
+            mp={heroMp}
+            busy={busy}
+            onCast={playerAttack}
+            onBack={() => setMagicMenuOpen(false)}
+          />
         ) : itemMenuOpen ? (
-          <div style={styles.itemWindow}>
-            {Object.entries(ITEMS).map(([id, item]) => {
-              const itemId = id as ItemId;
-              return (
-                <button
-                  key={itemId}
-                  style={{
-                    ...styles.itemButton,
-                    opacity: inventory[itemId] > 0 ? 1 : 0.42,
-                  }}
-                  disabled={busy || inventory[itemId] === 0}
-                  onClick={() => handleItem(itemId)}
-                >
-                  <img src={item.image} alt="" style={styles.itemIcon} />
-                  <span>{item.name}</span>
-                  <strong>×{inventory[itemId]}</strong>
-                </button>
-              );
-            })}
-            <button
-              style={styles.backButton}
-              onClick={() => setItemMenuOpen(false)}
-            >
-              戻る
-            </button>
-          </div>
+          <ItemMenu
+            itemIds={ownedItemIds}
+            inventory={inventory}
+            busy={busy}
+            onUse={handleItem}
+            onBack={() => setItemMenuOpen(false)}
+          />
         ) : (
           <div style={styles.commandWindow}>
             <button
               style={styles.commandButton}
               disabled={busy}
-              onClick={() => playerAttack(false)}
+              onClick={() => playerAttack()}
             >
               ⚔️ 攻撃
             </button>
             <button
               style={{
                 ...styles.commandButton,
-                opacity: fireUnlocked ? 1 : 0.42,
+                opacity: learnedSkills.length > 0 ? 1 : 0.42,
               }}
               disabled={busy}
-              onClick={() => playerAttack(true)}
+              onClick={() => {
+                if (learnedSkills.length === 0) {
+                  setBattleMessage("まだ魔法を習得していない");
+                  return;
+                }
+                setMagicMenuOpen(true);
+              }}
             >
-              {fireUnlocked ? "🔥 ファイア" : "🔒 魔法"}
+              {learnedSkills.length > 0 ? "✨ 魔法" : "🔒 魔法"}
             </button>
             <button
               style={styles.commandButton}
@@ -328,34 +531,6 @@ export default function RpgPage() {
         )}
       </section>
     </main>
-  );
-}
-
-function StatusGauge({
-  label,
-  value,
-  max,
-  color,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  color: string;
-}) {
-  return (
-    <div style={styles.gaugeRow}>
-      <span style={styles.gaugeLabel}>{label}</span>
-      <div style={styles.gaugeBg}>
-        <div
-          style={{
-            ...styles.gaugeFill,
-            width: `${Math.max(0, (value / max) * 100)}%`,
-            backgroundColor: color,
-          }}
-        />
-      </div>
-      <span style={styles.gaugeValue}>{value}</span>
-    </div>
   );
 }
 
@@ -436,35 +611,19 @@ const styles = {
     fontSize: "13px",
     textShadow: "0 2px 3px #000",
   },
-  gaugeRow: {
+  statusRow: {
     display: "flex",
-    width: "100%",
-    alignItems: "center",
-    gap: "4px",
-    marginBottom: "4px",
+    gap: "5px",
+    minHeight: "20px",
+    marginTop: "2px",
   },
-  gaugeLabel: {
-    width: "24px",
+  statusBadge: {
+    padding: "1px 6px",
+    border: "1px solid #fff",
+    borderRadius: "10px",
+    backgroundColor: "rgba(0,0,0,0.65)",
     fontSize: "11px",
-    fontWeight: 900,
-    textShadow: "1px 1px 0 #000",
-  },
-  gaugeBg: {
-    flex: 1,
-    height: "9px",
-    overflow: "hidden",
-    border: "2px solid #fff",
-    borderRadius: "3px",
-    backgroundColor: "#111",
-    boxShadow: "0 0 0 1px #000",
-  },
-  gaugeFill: { height: "100%", transition: "width 0.32s ease-out" },
-  gaugeValue: {
-    width: "27px",
-    textAlign: "right" as const,
-    fontSize: "10px",
     fontWeight: "bold",
-    textShadow: "1px 1px 0 #000",
   },
   bottomUi: {
     position: "relative" as const,
@@ -511,39 +670,6 @@ const styles = {
     color: "#fff",
     textDecoration: "none",
     fontSize: "16px",
-    fontWeight: "bold",
-  },
-  itemWindow: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "8px",
-    padding: "10px",
-    border: "4px solid #fff",
-    borderRadius: "5px",
-    backgroundColor: "rgba(20,20,70,0.96)",
-  },
-  itemButton: {
-    display: "grid",
-    gridTemplateColumns: "42px 1fr auto",
-    alignItems: "center",
-    gap: "4px",
-    minHeight: "52px",
-    padding: "4px 7px",
-    border: "1px solid rgba(255,255,255,0.35)",
-    borderRadius: "6px",
-    color: "#fff",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    cursor: "pointer",
-    fontSize: "11px",
-  },
-  itemIcon: { width: "42px", height: "42px", objectFit: "contain" as const },
-  backButton: {
-    minHeight: "38px",
-    border: "1px solid #fff",
-    borderRadius: "5px",
-    color: "#fff",
-    backgroundColor: "transparent",
-    cursor: "pointer",
     fontWeight: "bold",
   },
   resultWindow: {

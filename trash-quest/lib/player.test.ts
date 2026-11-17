@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node's type-stripping runner requires the explicit extension.
-import { calculateDamage, drawItem, FLOORS } from "./game.ts";
-// @ts-expect-error Node's type-stripping runner requires the explicit extension.
+import { calculateDamage, drawItem, FLOORS, ITEM_IDS } from "./game.ts";
 import { applyQuestReward, buyItem, DEFAULT_PLAYER } from "./player.ts";
 
 const demoLevels = [
@@ -18,7 +16,7 @@ test("the demo cleanup raises the player from level 1 to 13", () => {
 
   assert.equal(reward.earnedExp, 1775);
   assert.equal(reward.levelsGained, 12);
-  assert.deepEqual(reward.unlockedSkills, ["fire"]);
+  assert.deepEqual(reward.unlockedSkills, ["boa"]);
   assert.deepEqual(reward.player, {
     level: 13,
     exp: 83,
@@ -27,8 +25,8 @@ test("the demo cleanup raises the player from level 1 to 13", () => {
     maxMp: 44,
     attack: 41,
     defense: 26,
-    unlockedSkills: ["fire"],
-    inventory: { herb: 0, potion: 1, shield: 0 },
+    unlockedSkills: ["boa"],
+    inventory: { ...DEFAULT_PLAYER.inventory, potion: 1 },
     highestFloor: 1,
     gold: 1661,
   });
@@ -56,10 +54,10 @@ test("cleaning changes the reachable dungeon floor", () => {
   assert.equal(winsWithoutItems(leveled, FLOORS[2]), false);
 });
 
-test("item draw covers all three rewards", () => {
+test("item draw covers every item from the first to the last", () => {
   assert.equal(drawItem(() => 0), "herb");
-  assert.equal(drawItem(() => 0.5), "potion");
-  assert.equal(drawItem(() => 0.999), "shield");
+  assert.equal(drawItem(() => 0.999), ITEM_IDS[ITEM_IDS.length - 1]);
+  assert.equal(new Set(ITEM_IDS.map((_, i) => drawItem(() => (i + 0.5) / ITEM_IDS.length))).size, ITEM_IDS.length);
 });
 
 test("buying an item spends gold and adds it to the inventory", () => {
@@ -67,7 +65,10 @@ test("buying an item spends gold and adds it to the inventory", () => {
 
   assert.ok(purchased);
   assert.equal(purchased.gold, 1411);
-  assert.deepEqual(purchased.inventory, { herb: 0, potion: 1, shield: 0 });
+  assert.deepEqual(purchased.inventory, {
+    ...DEFAULT_PLAYER.inventory,
+    potion: 1,
+  });
 });
 
 test("an item cannot be bought without enough gold", () => {

@@ -1,4 +1,4 @@
-import type { ItemId } from "./game";
+import { ITEM_IDS, SKILLS, SKILL_IDS, type ItemId } from "./game.ts";
 
 export type DetectionLevel = "lv1" | "lv2" | "lv3" | "lv4";
 
@@ -29,6 +29,13 @@ let cachedValue: string | null | undefined;
 let cachedPlayer: PlayerState;
 const listeners = new Set<() => void>();
 
+function emptyInventory(): Record<ItemId, number> {
+  return Object.fromEntries(ITEM_IDS.map((id) => [id, 0])) as Record<
+    ItemId,
+    number
+  >;
+}
+
 export const DEFAULT_PLAYER: PlayerState = {
   level: 1,
   exp: 0,
@@ -38,7 +45,7 @@ export const DEFAULT_PLAYER: PlayerState = {
   attack: 5,
   defense: 2,
   unlockedSkills: [],
-  inventory: { herb: 0, potion: 0, shield: 0 },
+  inventory: emptyInventory(),
   highestFloor: 1,
   gold: 1661,
 };
@@ -55,10 +62,6 @@ const LEVEL_UP_GROWTH = {
   maxMp: 2,
   attack: 3,
   defense: 2,
-};
-
-const SKILL_UNLOCK_LEVEL: Record<string, number> = {
-  fire: 13,
 };
 
 export function calculateQuestExp(levels: DetectionLevel[]): number {
@@ -90,7 +93,7 @@ export function applyQuestReward(
     player.expToNext += 12;
     levelsGained += 1;
 
-    for (const [skill, unlockLevel] of Object.entries(SKILL_UNLOCK_LEVEL)) {
+    for (const [skill, unlockLevel] of SKILL_IDS.map((id) => [id, SKILLS[id].unlockLevel] as const)) {
       if (
         player.level >= unlockLevel &&
         !player.unlockedSkills.includes(skill)
@@ -148,7 +151,12 @@ export function loadPlayer(): PlayerState {
     cachedPlayer = {
       ...freshPlayer(),
       ...parsed,
-      unlockedSkills: parsed.unlockedSkills ?? [],
+      // 旧セーブの "fire" は "boa" に置き換える
+      unlockedSkills: [
+        ...new Set(
+          (parsed.unlockedSkills ?? []).map((s) => (s === "fire" ? "boa" : s)),
+        ),
+      ],
       inventory: { ...DEFAULT_PLAYER.inventory, ...parsed.inventory },
     };
   } catch {

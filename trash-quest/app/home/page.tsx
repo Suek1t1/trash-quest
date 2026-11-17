@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { ITEMS, type ItemId } from "@/lib/game";
+import { ITEMS, SKILLS, SKILL_IDS, type ItemId } from "@/lib/game";
 import { usePlayer } from "@/lib/use-player";
 
 export default function HomePage() {
@@ -82,7 +82,11 @@ export default function HomePage() {
             </div>
 
             <div style={styles.skillLine}>
-              魔法　{player.unlockedSkills.includes("fire") ? "🔥 ファイア" : "未習得"}
+              魔法　{player.unlockedSkills.length > 0
+                ? SKILL_IDS.filter((id) => player.unlockedSkills.includes(id))
+                    .map((id) => `${SKILLS[id].icon} ${SKILLS[id].name}`)
+                    .join(" / ")
+                : "未習得"}
             </div>
 
             <h2 style={styles.inventoryTitle}>INVENTORY</h2>

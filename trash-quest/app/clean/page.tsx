@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import detectionsJson from "@/api/detections.json";
-import QuestResult, { type Detection } from "./quest-result";
+import QuestResult, { MONSTER_IMAGES, type Detection } from "./quest-result";
 
 const detections = detectionsJson as Detection[];
 
@@ -61,6 +61,23 @@ export default function CleanPage() {
                   alt="片付け前の部屋"
                   style={styles.previewImage}
                 />
+                {detections.map((detection, index) => {
+                  const [ymin, xmin, ymax, xmax] = detection.box_2d;
+                  return (
+                    <img
+                      key={`${detection.name}-${index}`}
+                      src={MONSTER_IMAGES[detection.level] ?? MONSTER_IMAGES.lv2}
+                      alt={detection.name}
+                      style={{
+                        ...styles.monster,
+                        top: `${ymin / 10}%`,
+                        left: `${xmin / 10}%`,
+                        width: `${(xmax - xmin) / 10}%`,
+                        height: `${(ymax - ymin) / 10}%`,
+                      }}
+                    />
+                  );
+                })}
                 <span style={styles.beforeLabel}>BEFORE</span>
               </div>
               <p style={styles.warningText}>
@@ -114,7 +131,6 @@ function CaptureButton({
       <input
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={onChange}
         style={{ display: "none" }}
       />
@@ -189,16 +205,22 @@ const styles = {
   previewFrame: {
     position: "relative" as const,
     width: "100%",
-    aspectRatio: "4 / 3",
     overflow: "hidden",
+    lineHeight: 0,
     border: "2px solid #fff",
     borderRadius: "10px",
     backgroundColor: "#05050b",
   },
   previewImage: {
     width: "100%",
-    height: "100%",
-    objectFit: "cover" as const,
+    height: "auto",
+    display: "block",
+  },
+  monster: {
+    position: "absolute" as const,
+    objectFit: "contain" as const,
+    pointerEvents: "none" as const,
+    filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.7))",
   },
   beforeLabel: {
     position: "absolute" as const,

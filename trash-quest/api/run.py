@@ -56,6 +56,7 @@ class handler(BaseHTTPRequestHandler):
                     
 # utils.py が作成した detections.json から魔物の数をカウントする
                 monster_count = 0
+                detections = []
                 if os.path.exists("detections.json"):
                     with open("detections.json", "r", encoding="utf-8") as jf:
                         detections = json.load(jf)
@@ -69,7 +70,8 @@ class handler(BaseHTTPRequestHandler):
             response_data = {
                 "status": "success",
                 "processed_image": f"data:image/png;base64,{processed_image_base64}",
-                "monster_count": monster_count
+                "monster_count": monster_count,
+                "detections": detections
             }
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
 
