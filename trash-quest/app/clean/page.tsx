@@ -1,35 +1,100 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import detectionsJson from "@/api/detections.json";
-import QuestResult, { MONSTER_IMAGES, type Detection } from "./quest-result";
-
-const detections = detectionsJson as Detection[];
+import { parseDetections, type Detection } from "@/lib/detections";
+import { prepareImage } from "@/lib/prepare-image";
+import QuestResult, { MONSTER_IMAGES } from "./quest-result";
 
 export default function CleanPage() {
   const [beforeImage, setBeforeImage] = useState<string | null>(null);
   const [afterImage, setAfterImage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [detections, setDetections] = useState<Detection[] | null>(null);
+  const [beforeFile, setBeforeFile] = useState<File | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  const controllerRef = useRef<AbortController | null>(null);
+  const busyRef = useRef(false);
 
-  const readImage = (
+  useEffect(() => () => controllerRef.current?.abort(), []);
+
+  async function inspect(file: File) {
+    if (isDemo) {
+      setDetections(parseDetections(detectionsJson));
+      return;
+    }
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 55_000);
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const response = await fetch("/api/inspect", { method: "POST", body: form, signal: controller.signal });
+      if (!response.headers.get("content-type")?.includes("application/json")) {
+        throw new Error(response.status === 413
+          ? "画像が大きすぎます。解像度を下げて選び直してください。"
+          : "画像解析に接続できませんでした。しばらく待って再試行してください。");
+      }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "画像解析に失敗しました。");
+      try {
+        setDetections(parseDetections(result.detections));
+      } catch {
+        throw new Error("画像解析の結果が正しくありません。再試行してください。");
+      }
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new Error("通信に失敗しました。接続を確認して再試行してください。");
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(timeout);
+      controllerRef.current = null;
+    }
+  }
+
+  async function runImageTask(task: () => Promise<void>) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setIsBusy(true);
+    setErrorMessage(null);
+    try {
+      await task();
+    } catch (error) {
+      setErrorMessage(error instanceof Error && error.name === "AbortError"
+        ? "画像解析がタイムアウトしました。再試行してください。"
+        : error instanceof Error ? error.message : "画像を処理できませんでした。");
+    } finally {
+      busyRef.current = false;
+      setIsBusy(false);
+    }
+  }
+
+  const readImage = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    setImage: (image: string) => void,
+    after: boolean,
   ) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setErrorMessage(null);
-      setImage(reader.result as string);
-    };
-    reader.onerror = () => setErrorMessage("画像を読み込めませんでした。");
-    reader.readAsDataURL(file);
+    await runImageTask(async () => {
+      const prepared = await prepareImage(file);
+      if (after) {
+        setAfterImage(prepared.preview);
+      } else {
+        setBeforeImage(prepared.preview);
+        setBeforeFile(prepared.file);
+        setAfterImage(null);
+        setDetections(null);
+        await inspect(prepared.file);
+      }
+    });
   };
 
-  if (beforeImage && afterImage) {
+  if (beforeImage && afterImage && detections && detections.length > 0) {
     return (
       <QuestResult
         beforeImage={beforeImage}
@@ -48,7 +113,7 @@ export default function CleanPage() {
           ◀ ホーム
         </Link>
         <div style={styles.title}>トラッシュクエスト</div>
-        <span style={styles.demoBadge}>DEMO</span>
+        <span style={styles.demoBadge}>{isDemo ? "DEMO" : "Gemini"}</span>
       </header>
 
       <section style={styles.content}>
@@ -61,7 +126,7 @@ export default function CleanPage() {
                   alt="片付け前の部屋"
                   style={styles.previewImage}
                 />
-                {detections.map((detection, index) => {
+                {detections?.map((detection, index) => {
                   const [ymin, xmin, ymax, xmax] = detection.box_2d;
                   return (
                     <img
@@ -80,20 +145,28 @@ export default function CleanPage() {
                 })}
                 <span style={styles.beforeLabel}>BEFORE</span>
               </div>
-              <p style={styles.warningText}>
-                魔物を {detections.length} 体発見！
-                <br />
-                片付けが終わったら、同じ場所からもう一度撮影しよう。
-              </p>
-              <CaptureButton
+              {detections !== null && (
+                <p style={styles.warningText}>
+                  {detections.length > 0 ? `魔物を ${detections.length} 体発見！` : "片付けるものは見つかりませんでした。別の写真を選べます。"}
+                  {detections.length > 0 && <><br />片付けが終わったら、同じ場所からもう一度撮影しよう。<br />前後画像の自動比較は行いません。</>}
+                </p>
+              )}
+              {!isBusy && detections === null && beforeFile && (
+                <button type="button" style={styles.cameraButton} onClick={() => void runImageTask(() => inspect(beforeFile))}>
+                  画像解析を再試行
+                </button>
+              )}
+              {detections !== null && detections.length > 0 && <CaptureButton
                 label={
                   <>
                     <img src="/img/broom.png" alt="" style={styles.broomIcon} />
                     片付け後の写真を撮る
                   </>
                 }
-                onChange={(event) => readImage(event, setAfterImage)}
-              />
+                disabled={isBusy}
+                onChange={(event) => void readImage(event, true)}
+              />}
+              <CaptureButton label="片付け前の写真を選び直す" disabled={isBusy} onChange={(event) => void readImage(event, false)} />
             </>
           ) : (
             <>
@@ -102,16 +175,22 @@ export default function CleanPage() {
               <p style={styles.text}>
                 片付ける前の部屋を撮影してください。
                 <br />
-                デモでは保存済みの検出結果を使用します。
+                {isDemo ? "デモでは保存済みの検出結果を使用します。" : "写真をGeminiへ送信し、片付けるものを解析します。"}
               </p>
+              <label>
+                <input type="checkbox" checked={isDemo} disabled={isBusy} onChange={(event) => setIsDemo(event.target.checked)} />
+                固定の検出結果でデモを試す
+              </label>
               <CaptureButton
-                label="撮影前の写真を撮る"
-                onChange={(event) => readImage(event, setBeforeImage)}
+                label="片付け前の写真を撮る"
+                disabled={isBusy}
+                onChange={(event) => void readImage(event, false)}
               />
             </>
           )}
 
-          {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
+          {isBusy && <p role="status">{beforeImage && detections === null ? "Geminiで画像を解析中…" : "画像を準備中…"}</p>}
+          {errorMessage && <p role="alert" style={styles.errorText}>{errorMessage}</p>}
         </div>
       </section>
     </main>
@@ -121,16 +200,19 @@ export default function CleanPage() {
 function CaptureButton({
   label,
   onChange,
+  disabled,
 }: {
   label: React.ReactNode;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled: boolean;
 }) {
   return (
-    <label style={styles.cameraButton}>
+    <label style={{ ...styles.cameraButton, opacity: disabled ? 0.5 : 1, marginTop: "16px" }}>
       {label}
       <input
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
+        disabled={disabled}
         onChange={onChange}
         style={{ display: "none" }}
       />

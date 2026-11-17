@@ -17,12 +17,7 @@ import {
   type DetectionLevel,
 } from "@/lib/player";
 import LevelUpResult, { type LevelResult } from "./level-up-result";
-
-export type Detection = {
-  name: string;
-  box_2d: [number, number, number, number];
-  level: DetectionLevel;
-};
+import type { Detection } from "@/lib/detections";
 
 type ImagePhase = "before" | "transition" | "after";
 type ResultScreen = "collection" | "level-up";
