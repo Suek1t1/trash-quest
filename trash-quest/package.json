@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test lib/player.test.ts lib/battle.test.ts"
+    "test": "node --test lib/player.test.ts lib/battle.test.ts lib/detections.test.ts app/api/inspect/route.test.ts"
   },
   "dependencies": {
     "next": "16.3.5",
